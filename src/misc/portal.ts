@@ -1,5 +1,5 @@
 import { Component } from "../component/component";
-import { patch } from "../vdom/index";
+import { patch, VNode } from "../vdom/index";
 import { xml } from "../tags";
 
 /**
@@ -20,23 +20,23 @@ export class Portal extends Component<any, any> {
   static template = xml`<portal><t t-slot="default"/></portal>`;
   // TODO: props validation
 
-  portal: HTMLElement | null = null;
+  portal: VNode | null = null;
 
   __mount(fiber, elm) {
     // TODO: add check that children.length === 1
-    const vnode = fiber.vnode.children[0];
+    this.portal = fiber.vnode.children[0];
     fiber.vnode.children = [];
     const res = super.__mount(fiber, elm);
     const target = document.querySelector(this.props.target);
     const fakeNode = document.createElement('fake');
     target.appendChild(fakeNode);
-    patch(fakeNode, vnode);
+    patch(fakeNode, this.portal!);
     return res;
   }
 
   __destroy(parent) {
     if (this.portal) {
-        this.portal.remove();
+        document.querySelector(this.props.target).removeChild(this.portal.elm!);
     }
     super.__destroy(parent);
   }

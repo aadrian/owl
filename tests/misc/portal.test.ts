@@ -74,7 +74,15 @@ describe("Portal", () => {
     await nextTick();
     expect(outside.innerHTML).toBe('<div>2</div>');
     expect(parent.el!.outerHTML).toBe('<div><span>1</span><portal></portal></div>');
+
+    parent.state.hasPortal = false;
+    await nextTick();
+    expect(outside.innerHTML).toBe('');
+    expect(parent.el!.outerHTML).toBe('<div><span>1</span></div>');
+
+    parent.state.hasPortal = true;
+    await nextTick();
+    expect(outside.innerHTML).toBe('<div>2</div>');
+    expect(parent.el!.outerHTML).toBe('<div><span>1</span><portal></portal></div>');
   });
-
-
 });
