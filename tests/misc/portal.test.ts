@@ -11,17 +11,18 @@ import { useState } from "../../src/hooks";
 // We create before each test:
 // - fixture: a div, appended to the DOM, intended to be the target of dom
 //   manipulations.  Note that it is removed after each test.
-// - fixture has a child div with id #somewhere-else meant to be used as
+// - outside: a div with id #outside appended into fixture, meant to be used as
 //   target by Portal component
 // - a test env, necessary to create components, that is set on Component
 
 let fixture: HTMLElement;
+let outside: HTMLElement;
 
 beforeEach(() => {
   fixture = makeTestFixture();
-  const div = document.createElement("div");
-  div.setAttribute("id", "somewhere-else");
-  fixture.appendChild(div);
+  outside = document.createElement("div");
+  outside.setAttribute("id", "outside");
+  fixture.appendChild(outside);
 
   Component.env = makeTestEnv();
 });
@@ -36,9 +37,9 @@ describe("Portal", () => {
       static components = { Portal };
       static template = xml`
         <div>
-          <span>in parent</span>
-          <Portal target="'#somewhere-else'">
-            <span>somewhere else</span>
+          <span>1</span>
+          <Portal target="'#outside'">
+            <div>2</div>
           </Portal>
         </div>`;
     }
@@ -46,7 +47,8 @@ describe("Portal", () => {
     const parent = new Parent();
     await parent.mount(fixture);
 
-    expect(fixture.innerHTML).toMatchSnapshot();
+    expect(outside.innerHTML).toBe('<div>2</div>');
+    expect(parent.el!.outerHTML).toBe('<div><span>1</span><portal></portal></div>');
   });
 
   test("conditional use of Portal", async () => {
@@ -54,23 +56,24 @@ describe("Portal", () => {
       static components = { Portal };
       static template = xml`
         <div>
-          <span>in parent</span>
-          <Portal target="'#somewhere-else'" t-if="state.hasPortal">
-            <span>somewhere else</span>
+          <span>1</span>
+          <Portal target="'#outside'" t-if="state.hasPortal">
+            <div>2</div>
           </Portal>
         </div>`;
 
       state = useState({ hasPortal: false });
     }
 
-
     const parent = new Parent();
     await parent.mount(fixture);
+    expect(outside.innerHTML).toBe('');
+    expect(parent.el!.outerHTML).toBe('<div><span>1</span></div>');
 
-    expect(fixture.innerHTML).toMatchSnapshot();
     parent.state.hasPortal = true;
     await nextTick();
-    expect(fixture.innerHTML).toMatchSnapshot();
+    expect(outside.innerHTML).toBe('<div>2</div>');
+    expect(parent.el!.outerHTML).toBe('<div><span>1</span><portal></portal></div>');
   });
 
 

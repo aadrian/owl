@@ -1,7 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Portal basic use of portal 1`] = `"<div id=\\"somewhere-else\\"><span>somewhere else</span></div><div><span>in parent</span><portal></portal></div>"`;
-
-exports[`Portal conditional use of Portal 1`] = `"<div id=\\"somewhere-else\\"></div><div><span>in parent</span></div>"`;
-
-exports[`Portal conditional use of Portal 2`] = `"<div id=\\"somewhere-else\\"><span>somewhere else</span></div><div><span>in parent</span><portal></portal></div>"`;

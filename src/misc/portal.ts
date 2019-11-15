@@ -22,11 +22,6 @@ export class Portal extends Component<any, any> {
 
   portal: HTMLElement | null = null;
 
-  constructor(...args) {
-    super(...args);
-    console.warn(this.props);
-  }
-
   __mount(fiber, elm) {
     // TODO: add check that children.length === 1
     const vnode = fiber.vnode.children[0];
