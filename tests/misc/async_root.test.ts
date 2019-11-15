@@ -11,7 +11,7 @@ import { Component } from "../../src/component/component";
 // We create before each test:
 // - fixture: a div, appended to the DOM, intended to be the target of dom
 //   manipulations.  Note that it is removed after each test.
-// - a test env, necessary to create components, that is set as env
+// - a test env, necessary to create components, that is set on Component
 
 let fixture: HTMLElement;
 

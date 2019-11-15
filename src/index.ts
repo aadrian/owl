@@ -11,7 +11,7 @@ import { config } from "./config";
 import * as _store from "./store";
 import * as _utils from "./utils";
 import * as _tags from "./tags";
-import { AsyncRoot } from "./misc/async_root";
+import { AsyncRoot, Portal } from "./misc/async_root";
 import * as _hooks from "./hooks";
 import * as _context from "./context";
 import { Link } from "./router/link";
@@ -29,7 +29,7 @@ export const router = { Router, RouteComponent, Link };
 export const Store = _store.Store;
 export const utils = _utils;
 export const tags = _tags;
-export const misc = { AsyncRoot };
+export const misc = { AsyncRoot, Portal };
 export const hooks = Object.assign({}, _hooks, {
   useContext: _context.useContext,
   useDispatch: _store.useDispatch,
