@@ -21,15 +21,19 @@ export class Portal extends Component<any, any> {
   // TODO: props validation
 
   portal: VNode | null = null;
+  target: HTMLElement | null = null;
 
   __mount(fiber, elm) {
     // TODO: add check that children.length === 1
     this.portal = fiber.vnode.children[0];
     fiber.vnode.children = [];
     const res = super.__mount(fiber, elm);
-    const target = document.querySelector(this.props.target);
+    this.target = document.querySelector(this.props.target);
+    if (!this.target) {
+      throw new Error(`Could not find any match for "${this.props.target}"`);
+    }
     const fakeNode = document.createElement('fake');
-    target.appendChild(fakeNode);
+    this.target.appendChild(fakeNode);
     patch(fakeNode, this.portal!);
     return res;
   }
