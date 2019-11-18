@@ -23,24 +23,30 @@ export class Portal extends Component<any, any> {
   portal: VNode | null = null;
   target: HTMLElement | null = null;
 
-  __mount(fiber, elm) {
-    // TODO: add check that children.length === 1
-    this.portal = fiber.vnode.children[0];
-    fiber.vnode.children = [];
-    const res = super.__mount(fiber, elm);
+  async __moveToPortal(fiber) {
+    this.portal = (fiber.vnode!.children![0] as VNode);
+    fiber.vnode!.children = [];
+    await Promise.resolve();
     this.target = document.querySelector(this.props.target);
-    if (!this.target) {
-      throw new Error(`Could not find any match for "${this.props.target}"`);
+    if (this.target) {
+      const fakeNode = document.createElement('fake');
+      this.target.appendChild(fakeNode);
+      patch(fakeNode, this.portal!);
     }
-    const fakeNode = document.createElement('fake');
-    this.target.appendChild(fakeNode);
-    patch(fakeNode, this.portal!);
-    return res;
   }
 
+  __patch(vnode) {
+    this.__moveToPortal(this.__owl__.currentFiber);
+    super.__patch(vnode);
+  }
+  __mount(fiber, elm) {
+    this.__moveToPortal(fiber);
+    const res = super.__mount(fiber, elm);
+    return res;
+  }
   __destroy(parent) {
-    if (this.portal) {
-        document.querySelector(this.props.target).removeChild(this.portal.elm!);
+    if (this.target) {
+        document.querySelector(this.props.target).removeChild(this.portal!.elm!);
     }
     super.__destroy(parent);
   }
