@@ -1,5 +1,5 @@
 import { Component } from "../component/component";
-import { patch, VNode } from "../vdom/index";
+import { VNode } from "../vdom/index";
 import { xml } from "../tags";
 
 /**
@@ -23,28 +23,24 @@ export class Portal extends Component<any, any> {
   portal: VNode | null = null;
   target: HTMLElement | null = null;
 
-  async __moveToPortal(fiber) {
-    this.portal = (fiber.vnode!.children![0] as VNode);
-    fiber.vnode!.children = [];
-    await Promise.resolve();
+  __callMounted() {
+    console.warn('__callMounted', this.constructor.name);
+    const vnode = this.__owl__.vnode;
+    this.portal = (vnode!.children![0] as VNode);
+    // vnode!.children = [];
+    super.__callMounted();
     this.target = document.querySelector(this.props.target);
-    if (this.target) {
-      const fakeNode = document.createElement('fake');
-      this.target.appendChild(fakeNode);
-      patch(fakeNode, this.portal!);
+    console.warn('target', this.target);
+    if (!this.target) {
+      console.warn('NO target');
+      throw new Error(`Could not find any match for "${this.props.target}"`);
+    } else {
+      this.target.appendChild(((this.el as any).firstElementChild as any));
     }
   }
 
-  __patch(vnode) {
-    this.__moveToPortal(this.__owl__.currentFiber);
-    super.__patch(vnode);
-  }
-  __mount(fiber, elm) {
-    this.__moveToPortal(fiber);
-    const res = super.__mount(fiber, elm);
-    return res;
-  }
   __destroy(parent) {
+    console.warn('__destroy', this.constructor.name);
     if (this.target) {
         document.querySelector(this.props.target).removeChild(this.portal!.elm!);
     }
