@@ -161,4 +161,27 @@ describe("Portal", () => {
     expect(outside.innerHTML).toBe('<span>2</span>');
     expect(parent.el!.innerHTML).toBe('<portal></portal>');
   });
+
+  test("portal with only string as content", async () => {
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <t t-esc="state.val"/>
+          </Portal>
+        </div>`;
+      state = useState({ val: 1 });
+    }
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+    expect(outside.innerHTML).toBe('1');
+    expect(parent.el!.innerHTML).toBe('<portal></portal>');
+
+    parent.state.val = 2;
+    await nextTick();
+    //expect(outside.innerHTML).toBe('2');
+    expect(parent.el!.innerHTML).toBe('<portal></portal>');
+  });
 });

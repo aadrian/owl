@@ -24,7 +24,6 @@ export class Portal extends Component<any, any> {
   target: HTMLElement | null = null;
 
   __callMounted() {
-    console.warn('__callMounted', this.constructor.name);
     const vnode = this.__owl__.vnode;
     // check if children.length === 1
     this.portal = (vnode!.children![0] as VNode);
@@ -33,12 +32,11 @@ export class Portal extends Component<any, any> {
     if (!this.target) {
       throw new Error(`Could not find any match for "${this.props.target}"`);
     } else {
-      this.target.appendChild(this.el!.firstElementChild!);
+      this.target.appendChild(this.el!.firstChild!);
     }
   }
 
   __destroy(parent) {
-    console.warn('__destroy', this.constructor.name);
     if (this.target) {
         document.querySelector(this.props.target).removeChild(this.portal!.elm!);
     }
