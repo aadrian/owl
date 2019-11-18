@@ -24,21 +24,27 @@ export class Portal extends Component<any, any> {
   target: HTMLElement | null = null;
 
   __callMounted() {
-    const vnode = this.__owl__.vnode;
-    // check if children.length === 1
-    this.portal = (vnode!.children![0] as VNode);
+    const vnode = this.__owl__.vnode!;
+    console.log('PORTAL VNODE', vnode)
     super.__callMounted();
+
+    const children = vnode.children!;
+    if (children.length !== 1) {
+      throw new Error(`Portal must have exactly one child (has ${children.length})`);
+    }
+
     this.target = document.querySelector(this.props.target);
     if (!this.target) {
       throw new Error(`Could not find any match for "${this.props.target}"`);
     } else {
+      this.portal = (children[0] as VNode);
       this.target.appendChild(this.el!.firstChild!);
     }
   }
 
   __destroy(parent) {
-    if (this.target) {
-        document.querySelector(this.props.target).removeChild(this.portal!.elm!);
+    if (this.portal) {
+        document.querySelector(this.props.target).removeChild(this.portal.elm!);
     }
     super.__destroy(parent);
   }

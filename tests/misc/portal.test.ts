@@ -104,9 +104,7 @@ describe("Portal", () => {
     expect(parent.el!.innerHTML).toBe('<div id="local-target"><p>2</p></div><span>1</span><portal></portal>');
   });
 
-  test.skip("throws if outside doesn't exist", async () => {
-    // TODO: unskip this test once the error handling will be improved (on the
-    // patched/mounted cycle)
+  test("portal with target not in dom", async () => {
     const consoleError = console.error;
     console.error = jest.fn(() => {});
 
@@ -124,11 +122,10 @@ describe("Portal", () => {
     let error;
     try {
       await parent.mount(fixture);
-      console.warn('ici');
     } catch (e) {
        error = e;
     }
-    console.log('loool');
+
     expect(error).toBeDefined();
     expect(error.message).toBe('Could not find any match for "#does-not-exist"');
     expect(console.error).toBeCalledTimes(0);
@@ -162,7 +159,7 @@ describe("Portal", () => {
     expect(parent.el!.innerHTML).toBe('<portal></portal>');
   });
 
-  test("portal with only string as content", async () => {
+  test("portal with only text as content", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
@@ -183,5 +180,110 @@ describe("Portal", () => {
     await nextTick();
     expect(outside.innerHTML).toBe('2');
     expect(parent.el!.innerHTML).toBe('<portal></portal>');
+  });
+
+  test("portal with no content", async () => {
+    const consoleError = console.error;
+    console.error = jest.fn(() => {});
+
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <t t-if="false" t-esc="'ABC'"/>
+          </Portal>
+        </div>`;
+    }
+
+    const parent = new Parent();
+    let error;
+    try {
+      await parent.mount(fixture);
+    } catch (e) {
+       error = e;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toBe('Portal must have exactly one child (has 0)');
+    expect(console.error).toBeCalledTimes(0);
+    expect(fixture.innerHTML).toBe(`<div id="outside"></div>`);
+    console.error = consoleError;
+  });
+
+  test("portal with many children", async () => {
+    const consoleError = console.error;
+    console.error = jest.fn(() => {});
+
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <div>1</div>
+            <p>2</p>
+          </Portal>
+        </div>`;
+    }
+    const parent = new Parent();
+    let error;
+    try {
+      await parent.mount(fixture);
+    } catch (e) {
+       error = e;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toBe('Portal must have exactly one child (has 2)');
+    expect(console.error).toBeCalledTimes(0);
+    expect(fixture.innerHTML).toBe(`<div id="outside"></div>`);
+    console.error = consoleError;
+  });
+
+  test.only("portal with dynamic body", async () => {
+    /*const consoleError = console.error;
+    console.error = jest.fn(() => {});
+*/
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <span t-if="state.val" t-esc="state.val"/>
+            <div t-else=""/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});}
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span>ab</span>`);
+
+    parent.state.val = '';
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<div></div>`);
+  });
+
+test.skip("portal with no content", async () => {
+    /*const consoleError = console.error;
+    console.error = jest.fn(() => {});
+*/
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <span t-if="state.val" t-esc="state.val"/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});}
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span>ab</span>`);
+
+    parent.state.val = '';
+    await nextTick();
+    expect(outside.innerHTML).toBe(``);
   });
 });
