@@ -85,4 +85,39 @@ describe("Portal", () => {
     expect(outside.innerHTML).toBe('<div>2</div>');
     expect(parent.el!.outerHTML).toBe('<div><span>1</span><portal></portal></div>');
   });
+
+test("throws if outside doesn't exist", async () => {
+/*    const consoleError = console.error;
+    console.error = jest.fn(() => {});*/
+
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <span>1</span>
+          <Portal target="'#does-not-exist'">
+            <div>2</div>
+          </Portal>
+        </div>`;
+    }
+
+    const parent = new Parent();
+    expect(() => {
+      console.log('exec');
+      parent.mount(fixture);
+    }).toThrowError(`Could not find any match for "#does-not-exist"`);
+/*
+    let error;
+    try {
+      await parent.mount(fixture);
+    } catch (e) {
+      console.log(e);
+       error = e;
+    }
+console.log('loool');
+    expect(error).toBeDefined();
+    expect(error).toBe('Could not find any match for "#does-not-exist"');
+    expect(console.error).toBeCalledTimes(1);
+    console.error = consoleError;*/
+  });
 });
