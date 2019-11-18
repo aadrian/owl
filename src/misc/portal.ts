@@ -23,6 +23,29 @@ export class Portal extends Component<any, any> {
   portal: VNode | null = null;
   target: HTMLElement | null = null;
 
+  _deployPortal() {
+    if (this.__owl__.isMounted) {
+      // not sure what to do here
+    } else {
+      // What is now in callMounted
+    }
+  }
+
+  _foldPortal() {
+   if (this.__owl__.isMounted) {
+      // Get the outside part and put it back where it should be
+      // Within this dom
+    } else {
+      // Do nothing
+     
+  }
+
+  __patch() {
+    this._foldPortal()
+    super.__patch()
+    this._deployPortal()
+  }
+
   __callMounted() {
     const vnode = this.__owl__.vnode!;
     console.log('PORTAL VNODE', vnode)
