@@ -181,7 +181,7 @@ describe("Portal", () => {
 
     parent.state.val = 2;
     await nextTick();
-    //expect(outside.innerHTML).toBe('2');
+    expect(outside.innerHTML).toBe('2');
     expect(parent.el!.innerHTML).toBe('<portal></portal>');
   });
 });
