@@ -120,4 +120,25 @@ console.log('loool');
     expect(console.error).toBeCalledTimes(1);
     console.error = consoleError;*/
   });
+
+test("with target in template...", async () => {
+/*    const consoleError = console.error;
+    console.error = jest.fn(() => {});*/
+
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <div id="local-target"></div>
+          <span>1</span>
+          <Portal target="'#local-target'">
+            <p>2</p>
+          </Portal>
+        </div>`;
+    }
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+    expect(parent.innerHTML).toBe('<div id="localTarget"><p>2</p></div><span>1</span><portal></portal>');
+  });
 });
