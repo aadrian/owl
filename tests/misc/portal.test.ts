@@ -134,8 +134,17 @@ describe("Portal", () => {
   });
 
   test("portal with child and props", async () => {
+    const steps: string[] = [];
     class Child extends Component<any, any> {
       static template = xml`<span><t t-esc="props.val"/></span>`;
+      mounted() {
+        steps.push("mounted");
+        expect(outside.innerHTML).toBe("<span>1</span>");
+      }
+      patched() {
+        steps.push("patched");
+        expect(outside.innerHTML).toBe("<span>2</span>");
+      }
     }
     class Parent extends Component<any, any> {
       static components = { Portal, Child };
@@ -150,13 +159,14 @@ describe("Portal", () => {
 
     const parent = new Parent();
     await parent.mount(fixture);
-    expect(outside.innerHTML).toBe('<span>1</span>');
-    expect(parent.el!.innerHTML).toBe('<portal></portal>');
+    expect(outside.innerHTML).toBe("<span>1</span>");
+    expect(parent.el!.innerHTML).toBe("<portal></portal>");
 
     parent.state.val = 2;
     await nextTick();
-    expect(outside.innerHTML).toBe('<span>2</span>');
-    expect(parent.el!.innerHTML).toBe('<portal></portal>');
+    expect(outside.innerHTML).toBe("<span>2</span>");
+    expect(parent.el!.innerHTML).toBe("<portal></portal>");
+    expect(steps).toEqual(["mounted", "patched"]);
   });
 
   test("portal with only text as content", async () => {
@@ -238,10 +248,7 @@ describe("Portal", () => {
     console.error = consoleError;
   });
 
-  test.only("portal with dynamic body", async () => {
-    /*const consoleError = console.error;
-    console.error = jest.fn(() => {});
-*/
+  test("portal with dynamic body", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
@@ -263,10 +270,10 @@ describe("Portal", () => {
     expect(outside.innerHTML).toBe(`<div></div>`);
   });
 
-test.skip("portal with no content", async () => {
-    /*const consoleError = console.error;
+test("portal could have dynamically no content", async () => {
+    const consoleError = console.error;
     console.error = jest.fn(() => {});
-*/
+
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
@@ -275,15 +282,26 @@ test.skip("portal with no content", async () => {
             <span t-if="state.val" t-esc="state.val"/>
           </Portal>
         </div>`;
-        state = useState({ val: 'ab'});}
-
+        state = { val: 'ab'};
+      }
     const parent = new Parent();
     await parent.mount(fixture);
 
     expect(outside.innerHTML).toBe(`<span>ab</span>`);
 
-    parent.state.val = '';
-    await nextTick();
+    let error;
+    try {
+      parent.state.val = '';
+      await parent.render();
+    } catch (e) {
+       error = e;
+    }
     expect(outside.innerHTML).toBe(``);
+
+    expect(error).toBeDefined();
+    expect(error.message).toBe('Portal must have exactly one child (has 0)');
+
+    expect(console.error).toBeCalledTimes(0);
+    console.error = consoleError;
   });
 });

@@ -24,38 +24,11 @@ export class Portal extends Component<any, any> {
   target: HTMLElement | null = null;
 
   _deployPortal() {
-    if (this.__owl__.isMounted) {
-      // not sure what to do here
-    } else {
-      // What is now in callMounted
-    }
-  }
-
-  _foldPortal() {
-   if (this.__owl__.isMounted) {
-      // Get the outside part and put it back where it should be
-      // Within this dom
-    } else {
-      // Do nothing
-     
-  }
-
-  __patch() {
-    this._foldPortal()
-    super.__patch()
-    this._deployPortal()
-  }
-
-  __callMounted() {
     const vnode = this.__owl__.vnode!;
-    console.log('PORTAL VNODE', vnode)
-    super.__callMounted();
-
     const children = vnode.children!;
     if (children.length !== 1) {
       throw new Error(`Portal must have exactly one child (has ${children.length})`);
     }
-
     this.target = document.querySelector(this.props.target);
     if (!this.target) {
       throw new Error(`Could not find any match for "${this.props.target}"`);
@@ -63,11 +36,35 @@ export class Portal extends Component<any, any> {
       this.portal = (children[0] as VNode);
       this.target.appendChild(this.el!.firstChild!);
     }
+    if (!this.__owl__.isMounted) {
+      const children = Object.values(this.__owl__.children);
+      // vnode has max one child, though it doesn't mean it is a component
+      children.length && children[0].__callMounted();
+    }
+  }
+
+  _foldPortal() {
+    if (this.__owl__.isMounted) {
+      this.el!.appendChild(this.portal!.elm!);
+    }
+  }
+
+  __patch(vnode) {
+    this._foldPortal();
+    super.__patch(vnode);
+    this._deployPortal();
+  }
+
+  __callMounted() {
+    this._deployPortal();
+    super.__callMounted();
   }
 
   __destroy(parent) {
     if (this.portal) {
-        document.querySelector(this.props.target).removeChild(this.portal.elm!);
+      const displacedElm = this.portal.elm!;
+      const parent = displacedElm.parentNode;
+      parent && parent.removeChild(displacedElm);
     }
     super.__destroy(parent);
   }
