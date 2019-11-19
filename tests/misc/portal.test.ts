@@ -304,4 +304,64 @@ test("portal could have dynamically no content", async () => {
     expect(console.error).toBeCalledTimes(0);
     console.error = consoleError;
   });
+
+  test("events triggered on movable pure node are redirected", async () => {
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <span id="trigger-me" t-on-custom="_onCustom" t-esc="state.val"/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+
+        _onCustom() {
+          this.state.val = 'event reached me';
+        }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
+    const ev = new Event('custom');
+    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">event reached me</span>`);
+  });
+
+// TO FIX
+test("events triggered on movable owl components are redirected", async () => {
+    class Child extends Component<any, any> {
+       static template = xml`
+         <span id="trigger-me" t-on-custom="_onCustom" t-esc="props.val"/>`
+
+        _onCustom() {
+          console.warn(this.__owl__.vnode!.data!);
+          this.trigger('custom-portal');
+        }
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal, Child };
+      static template = xml`
+        <div t-on-custom-portal="_onCustomPortal">
+          <Portal target="'#outside'">
+            <Child val="state.val"/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+
+       _onCustomPortal() {
+         this.state.val = 'triggered';
+       }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
+    const ev = new Event('custom');
+    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
+  });
 });
