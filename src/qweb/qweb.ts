@@ -146,6 +146,7 @@ export class QWeb extends EventBus {
   templates: { [name: string]: Template };
   static utils = UTILS;
   static components = Object.create(null);
+  static eventNamesRegistry: string[] = [];
 
   static DIRECTIVE_NAMES: { [key: string]: 1 } = {
     name: 1,
@@ -197,6 +198,12 @@ export class QWeb extends EventBus {
     if (directive.extraNames) {
       directive.extraNames.forEach(n => (QWeb.DIRECTIVE_NAMES[n] = 1));
     }
+  }
+
+  static addEventToRegistry(evName: string) {
+     if (QWeb.eventNamesRegistry.indexOf(evName) === -1) {
+       QWeb.eventNamesRegistry.push(evName);
+     }
   }
 
   static registerComponent(name: string, Component: any) {

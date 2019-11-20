@@ -305,7 +305,7 @@ test("portal could have dynamically no content", async () => {
     console.error = consoleError;
   });
 
-  test("events triggered on movable pure node are redirected", async () => {
+  test("events triggered on movable pure node are handled", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
@@ -317,7 +317,7 @@ test("portal could have dynamically no content", async () => {
         state = useState({ val: 'ab'});
 
         _onCustom() {
-          this.state.val = 'event reached me';
+          this.state.val = 'triggered';
         }
       }
     const parent = new Parent();
@@ -327,7 +327,7 @@ test("portal could have dynamically no content", async () => {
     const ev = new Event('custom');
     outside.querySelector('#trigger-me')!.dispatchEvent(ev);
     await nextTick();
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">event reached me</span>`);
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
   });
 
 // TO FIX
@@ -337,7 +337,6 @@ test("events triggered on movable owl components are redirected", async () => {
          <span id="trigger-me" t-on-custom="_onCustom" t-esc="props.val"/>`
 
         _onCustom() {
-          console.warn(this.__owl__.vnode!.data!);
           this.trigger('custom-portal');
         }
     }
@@ -354,6 +353,31 @@ test("events triggered on movable owl components are redirected", async () => {
        _onCustomPortal() {
          this.state.val = 'triggered';
        }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
+    const ev = new Event('custom');
+    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
+  });
+
+  test("events triggered on movable pure node are redirected", async () => {
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'" t-on-custom="_onCustom">
+            <span id="trigger-me" t-esc="state.val"/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+
+        _onCustom() {
+          this.state.val = 'triggered';
+        }
       }
     const parent = new Parent();
     await parent.mount(fixture);

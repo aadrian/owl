@@ -35,6 +35,7 @@ QWeb.addDirective({
     if (!eventName) {
       throw new Error("Missing event name with t-on directive");
     }
+    QWeb.addEventToRegistry(eventName);
     let extraArgs;
     let handlerName = value.replace(/\(.*\)/, function(args) {
       extraArgs = args.slice(1, -1);

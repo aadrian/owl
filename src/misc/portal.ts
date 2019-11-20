@@ -1,6 +1,7 @@
 import { Component } from "../component/component";
 import { VNode } from "../vdom/index";
 import { xml } from "../tags";
+import { QWeb } from "../qweb/index";
 
 /**
  * Portal
@@ -34,12 +35,12 @@ export class Portal extends Component<any, any> {
       throw new Error(`Could not find any match for "${this.props.target}"`);
     } else {
       this.portal = (children[0] as VNode);
-      this.target.appendChild(this.el!.firstChild!);
+      this.target.appendChild(this.portal.elm!);
     }
+    this._redirectPortalEvents();
     if (!this.__owl__.isMounted) {
-      const children = Object.values(this.__owl__.children);
-      // vnode has max one child, though it doesn't mean it is a component
-      children.length && children[0].__callMounted();
+      const owlChildren = Object.values(this.__owl__.children);
+      owlChildren.length && owlChildren[0].__callMounted();
     }
   }
 
@@ -67,5 +68,15 @@ export class Portal extends Component<any, any> {
       parent && parent.removeChild(displacedElm);
     }
     super.__destroy(parent);
+  }
+
+  _redirectPortalEvents() {
+    for (let evName of QWeb.eventNamesRegistry) {
+      this.portal!.elm!.addEventListener(evName, (ev) => {
+        const mappedEvent = new (ev.constructor as any)(ev.type, ev);
+        ev.stopPropagation();
+        this.el!.dispatchEvent(mappedEvent);
+      });
+    }
   }
 }
