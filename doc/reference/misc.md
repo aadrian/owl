@@ -21,3 +21,9 @@ only on subsequent ones (triggered by state or props changes).
 
 The `AsyncRoot` assumes that there is exactly one root node inside it. It can
 be a dom node or a component.
+
+## `Portal`
+
+TODO !
+
+Target is static

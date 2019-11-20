@@ -388,4 +388,80 @@ test("events triggered on movable owl components are redirected", async () => {
     await nextTick();
     expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
   });
+
+  test("Handlers are re-affected on rerender", async () => {
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'" t-on-custom="_onCustom(state.val)">
+            <span t-if="state.val === 'ab'" id="trigger-me" t-esc="state.val"/>
+            <div t-else="" id="trigger-me" t-esc="state.val" />
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+
+        _onCustom(val) {
+          if (val === 'ab') {
+            this.state.val = 'triggered';
+          } else if (this.state.val === 'triggered' ) {
+            this.state.val = 'second trigger';
+          }
+        }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
+
+    let ev = new Event('custom');
+    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<div id="trigger-me">triggered</div>`);
+
+    ev = new Event('custom');
+    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<div id="trigger-me">second trigger</div>`);
+  });
+
+  test("Handlers are correctly unbound when changed", async () => {
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'" t-on-custom="_onCustom(state.val)">
+            <span t-if="state.val === 'ab'" id="trigger-me" t-esc="state.val"/>
+            <div t-else="" id="trigger-me" t-esc="state.val"/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+
+        _onCustom(val) {
+          if (val === 'ab') {
+            this.state.val = 'triggered';
+          } else if (this.state.val === 'triggered' ) {
+            this.state.val = 'second trigger';
+          }
+        }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
+
+    let ev = new Event('custom');
+    const formerOutside = outside.querySelector('#trigger-me');
+    formerOutside!.dispatchEvent(ev);
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<div id="trigger-me">triggered</div>`);
+
+    const newOutside = outside.querySelector('#trigger-me');
+    expect(formerOutside).toBeTruthy();
+    expect(formerOutside !== newOutside).toBeTruthy();
+
+    formerOutside!.dispatchEvent(new Event('custom'));
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<div id="trigger-me">triggered</div>`);
+  });
 });

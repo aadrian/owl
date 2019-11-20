@@ -23,6 +23,8 @@ export class Portal extends Component<any, any> {
 
   portal: VNode | null = null;
   target: HTMLElement | null = null;
+  previousMoveable: Node | null = null;
+  _handlerMapper: Function | EventListener | null = null;
 
   _deployPortal() {
     const vnode = this.__owl__.vnode!;
@@ -33,11 +35,14 @@ export class Portal extends Component<any, any> {
     this.target = document.querySelector(this.props.target);
     if (!this.target) {
       throw new Error(`Could not find any match for "${this.props.target}"`);
-    } else {
-      this.portal = (children[0] as VNode);
-      this.target.appendChild(this.portal.elm!);
     }
-    this._redirectPortalEvents();
+    this.portal = (children[0] as VNode);
+    this.target.appendChild(this.portal.elm!);
+    if (!this.previousMoveable || this.previousMoveable !== this.portal.elm!) {
+      this._unBindPortalEvents();
+      this._bindPortalEvents();
+      this.previousMoveable = this.portal!.elm!;
+    }
     if (!this.__owl__.isMounted) {
       const owlChildren = Object.values(this.__owl__.children);
       owlChildren.length && owlChildren[0].__callMounted();
@@ -70,13 +75,25 @@ export class Portal extends Component<any, any> {
     super.__destroy(parent);
   }
 
-  _redirectPortalEvents() {
-    for (let evName of QWeb.eventNamesRegistry) {
-      this.portal!.elm!.addEventListener(evName, (ev) => {
-        const mappedEvent = new (ev.constructor as any)(ev.type, ev);
-        ev.stopPropagation();
-        this.el!.dispatchEvent(mappedEvent);
-      });
+  _bindPortalEvents() {
+    this._handlerMapper = (ev: Event) => {
+      const mappedEvent = new (ev.constructor as any)(ev.type, ev);
+      ev.stopPropagation();
+      this.el!.dispatchEvent(mappedEvent);
     }
+
+    for (let evName of QWeb.eventNamesRegistry) {
+      this.portal!.elm!.addEventListener(evName, this._handlerMapper as EventListener);
+    }
+  }
+
+  _unBindPortalEvents() {
+    if (!this.previousMoveable) {
+      return;
+    }
+    for (let evName of QWeb.eventNamesRegistry) {
+      this.previousMoveable.removeEventListener(evName, this._handlerMapper as EventListener);
+    }
+    this._handlerMapper = null;
   }
 }
