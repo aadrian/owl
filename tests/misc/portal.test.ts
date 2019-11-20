@@ -169,7 +169,7 @@ describe("Portal", () => {
     expect(steps).toEqual(["mounted", "patched"]);
   });
 
-  test("portal with only text as content", async () => {
+  test.skip("portal with only text as content", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`

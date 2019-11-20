@@ -1,5 +1,5 @@
 import { Component } from "../component/component";
-import { VNode } from "../vdom/index";
+import { VNode , patch } from "../vdom/index";
 import { xml } from "../tags";
 import { QWeb } from "../qweb/index";
 
@@ -27,42 +27,28 @@ export class Portal extends Component<any, any> {
   _handlerMapper: Function | EventListener | null = null;
 
   _deployPortal() {
-    const vnode = this.__owl__.vnode!;
-    const children = vnode.children!;
-    if (children.length !== 1) {
-      throw new Error(`Portal must have exactly one child (has ${children.length})`);
-    }
-    this.target = document.querySelector(this.props.target);
-    if (!this.target) {
-      throw new Error(`Could not find any match for "${this.props.target}"`);
-    }
-    this.portal = (children[0] as VNode);
-    this.target.appendChild(this.portal.elm!);
-    if (!this.previousMoveable || this.previousMoveable !== this.portal.elm!) {
-      this._unBindPortalEvents();
-      this._bindPortalEvents();
-      this.previousMoveable = this.portal!.elm!;
-    }
-    if (!this.__owl__.isMounted) {
-      const owlChildren = Object.values(this.__owl__.children);
-      owlChildren.length && owlChildren[0].__callMounted();
-    }
-  }
-
-  _foldPortal() {
-    if (this.__owl__.isMounted) {
-      this.el!.appendChild(this.portal!.elm!);
-    }
+    const portalElm = this.portal!.elm!;
+    this.target!.appendChild(portalElm);
+    const owlChildren = Object.values(this.__owl__.children);
+    owlChildren.length && owlChildren[0].__callMounted();
   }
 
   __patch(vnode) {
-    this._foldPortal();
+    this._sanityChecks(vnode);
+    const target = this.portal || document.createElement(vnode.sel!)
+    this.portal = patch(target!, vnode.children![0] as VNode);
+    vnode.children = [];
+    this._makeEventHandling();
     super.__patch(vnode);
-    this._deployPortal();
   }
 
   __callMounted() {
+    const vnode = this.__owl__.vnode!;
+    this._sanityChecks(vnode);
+    this.portal = vnode.children![0] as VNode;
+    vnode.children = [];
     this._deployPortal();
+    this._makeEventHandling();
     super.__callMounted();
   }
 
@@ -81,7 +67,6 @@ export class Portal extends Component<any, any> {
       ev.stopPropagation();
       this.el!.dispatchEvent(mappedEvent);
     }
-
     for (let evName of QWeb.eventNamesRegistry) {
       this.portal!.elm!.addEventListener(evName, this._handlerMapper as EventListener);
     }
@@ -95,5 +80,25 @@ export class Portal extends Component<any, any> {
       this.previousMoveable.removeEventListener(evName, this._handlerMapper as EventListener);
     }
     this._handlerMapper = null;
+  }
+
+  _sanityChecks(vnode: VNode) {
+    const children = vnode.children!;
+    if (children.length !== 1) {
+      throw new Error(`Portal must have exactly one child (has ${children.length})`);
+    }
+    this.target = document.querySelector(this.props.target);
+    if (!this.target) {
+      throw new Error(`Could not find any match for "${this.props.target}"`);
+    }
+  }
+
+  _makeEventHandling() {
+    const portalElm = this.portal!.elm!;
+    if (!this.previousMoveable || this.previousMoveable !== portalElm) {
+      this._unBindPortalEvents();
+      this._bindPortalEvents();
+      this.previousMoveable = portalElm;
+    }
   }
 }
