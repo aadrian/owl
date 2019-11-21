@@ -29,7 +29,7 @@ export class Portal extends Component<any, any> {
   _previousPortalElm: Node | null = null;
   // A function that will be the event's tunnel
   // This needs to be an arrow function to avoid having to rebind `this`
-  _handlerTunnel: Function | EventListener = (ev: Event) => {
+  _handlerTunnel: (f: Event) => void = (ev: Event) => {
     if (ev instanceof CustomEvent) {
       const mappedEvent = new (ev.constructor as any)(ev.type, ev);
       ev.stopPropagation();

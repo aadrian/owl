@@ -500,4 +500,50 @@ test("events triggered on movable owl components are redirected", async () => {
     expect(outside.innerHTML).toBe(`<div>second trigger</div>`);
     expect(newTeleported === outside.children[0]).toBeTruthy();
   });
+
+  test("Most dom events are blacklisted from mapping", async () => {
+    const steps: string[] = [];
+    const allEvents = [
+      'keypress', 'keyup', 'keydown',
+      'mouseenter', 'mouseout', 'mouseup', 'click',
+      'load', 'tralala'
+    ];
+
+    const concatTOn = (acc, curr) => {
+      return acc + ` t-on-${curr}='_handled'`;
+    }
+    const computedHandlers: string = allEvents.reduce(concatTOn, '');
+
+    let childInst: Component<any, any> | null = null;
+    class Child extends Component<any, any> {
+      static template = xml`
+        <span>child</span>`;
+
+      constructor(parent, props) {
+          super(parent, props);
+          childInst = this;
+        }
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal , Child };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'" ${computedHandlers}>
+            <Child />
+          </Portal>
+        </div>`;
+
+      _handled(ev) {
+        steps.push(ev.type as string);
+      }
+    }
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    for (let ev of allEvents) {
+      childInst!.trigger(ev);
+    }
+    expect(steps).toEqual(['tralala']);
+  });
 });

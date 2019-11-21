@@ -70,6 +70,15 @@ const DISABLED_TAGS = ["input", "textarea", "button", "select", "option", "optgr
 
 const TRANSLATABLE_ATTRS = ["label", "title", "placeholder", "alt"];
 
+// Most common events susceptible to be listened to
+// in Owl templates
+const DOM_EVENTS_RE: RegExp = new RegExp(
+  "(aux|dbl)?click|mouse[a-z]+|" + // mouse events
+  "keyup|keydown|keypress|" + // keyboard events
+  "drag[a-z]*|" +
+  "load[a-z]*|" + // progress events, useful for iframe
+  "focus|blur");
+
 const lineBreakRE = /[\r\n]/;
 const whitespaceRE = /\s+/g;
 
@@ -201,7 +210,9 @@ export class QWeb extends EventBus {
   }
 
   static addEventToRegistry(evName: string) {
-    QWeb.eventNamesRegistry.add(evName);
+    if (!DOM_EVENTS_RE.test(evName)) {
+      QWeb.eventNamesRegistry.add(evName);
+    }
   }
 
   static registerComponent(name: string, Component: any) {
