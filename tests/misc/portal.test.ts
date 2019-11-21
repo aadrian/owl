@@ -32,6 +32,9 @@ afterEach(() => {
 });
 
 describe("Portal", () => {
+  /*
+   * DOM PLACEMENT
+   */
   test("basic use of portal", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
@@ -169,27 +172,32 @@ describe("Portal", () => {
     expect(steps).toEqual(["mounted", "patched"]);
   });
 
-  test.skip("portal with only text as content", async () => {
+  test("portal with only text as content", async () => {
+    const consoleError = console.error;
+    console.error = jest.fn(() => {});
+
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
         <div>
           <Portal target="'#outside'">
-            <t t-esc="state.val"/>
+            <t t-esc="'only text'"/>
           </Portal>
         </div>`;
-      state = useState({ val: 1 });
     }
 
     const parent = new Parent();
-    await parent.mount(fixture);
-    expect(outside.innerHTML).toBe('1');
-    expect(parent.el!.innerHTML).toBe('<portal></portal>');
-
-    parent.state.val = 2;
-    await nextTick();
-    expect(outside.innerHTML).toBe('2');
-    expect(parent.el!.innerHTML).toBe('<portal></portal>');
+    let error;
+    try {
+      await parent.mount(fixture);
+    } catch (e) {
+       error = e;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toBe('Portal must have exactly one non-text child (has 0)');
+    expect(console.error).toBeCalledTimes(0);
+    expect(fixture.innerHTML).toBe(`<div id="outside"></div>`);
+    console.error = consoleError;
   });
 
   test("portal with no content", async () => {
@@ -214,7 +222,7 @@ describe("Portal", () => {
        error = e;
     }
     expect(error).toBeDefined();
-    expect(error.message).toBe('Portal must have exactly one child (has 0)');
+    expect(error.message).toBe('Portal must have exactly one non-text child (has 0)');
     expect(console.error).toBeCalledTimes(0);
     expect(fixture.innerHTML).toBe(`<div id="outside"></div>`);
     console.error = consoleError;
@@ -242,7 +250,7 @@ describe("Portal", () => {
        error = e;
     }
     expect(error).toBeDefined();
-    expect(error.message).toBe('Portal must have exactly one child (has 2)');
+    expect(error.message).toBe('Portal must have exactly one non-text child (has 2)');
     expect(console.error).toBeCalledTimes(0);
     expect(fixture.innerHTML).toBe(`<div id="outside"></div>`);
     console.error = consoleError;
@@ -299,12 +307,14 @@ test("portal could have dynamically no content", async () => {
     expect(outside.innerHTML).toBe(``);
 
     expect(error).toBeDefined();
-    expect(error.message).toBe('Portal must have exactly one child (has 0)');
+    expect(error.message).toBe('Portal must have exactly one non-text child (has 0)');
 
     expect(console.error).toBeCalledTimes(0);
     console.error = consoleError;
   });
-
+  /*
+   * EVENTS HANDLING
+   */
   test("events triggered on movable pure node are handled", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
@@ -324,17 +334,21 @@ test("portal could have dynamically no content", async () => {
     await parent.mount(fixture);
 
     expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-    const ev = new Event('custom');
-    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    outside.querySelector('#trigger-me')!.dispatchEvent(new Event('custom'));
     await nextTick();
     expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
   });
 
-// TO FIX
 test("events triggered on movable owl components are redirected", async () => {
+    let childInst: Component<any, any> | null = null;
     class Child extends Component<any, any> {
        static template = xml`
-         <span id="trigger-me" t-on-custom="_onCustom" t-esc="props.val"/>`
+         <span t-on-custom="_onCustom" t-esc="props.val"/>`
+
+        constructor(parent, props) {
+          super(parent, props);
+          childInst = this;
+        }
 
         _onCustom() {
           this.trigger('custom-portal');
@@ -357,14 +371,53 @@ test("events triggered on movable owl components are redirected", async () => {
     const parent = new Parent();
     await parent.mount(fixture);
 
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-    const ev = new Event('custom');
-    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    expect(outside.innerHTML).toBe(`<span>ab</span>`);
+    childInst!.trigger('custom');
     await nextTick();
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
+    expect(outside.innerHTML).toBe(`<span>triggered</span>`);
   });
 
-  test("events triggered on movable pure node are redirected", async () => {
+test("events triggered on movable owl components are redirected", async () => {
+    let childInst: Component<any, any> | null = null;
+    class Child extends Component<any, any> {
+       static template = xml`
+         <span t-on-custom="_onCustom" t-esc="props.val"/>`
+
+        constructor(parent, props) {
+          super(parent, props);
+          childInst = this;
+        }
+
+        _onCustom() {
+          this.trigger('custom-portal');
+        }
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal, Child };
+      static template = xml`
+        <div t-on-custom-portal="_onCustomPortal">
+          <Portal target="'#outside'">
+            <div>
+              <Child val="state.val"/>
+            </div>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+
+       _onCustomPortal() {
+         this.state.val = 'triggered';
+       }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(outside.innerHTML).toBe(`<div><span>ab</span></div>`);
+    childInst!.trigger('custom');
+    await nextTick();
+    expect(outside.innerHTML).toBe(`<div><span>triggered</span></div>`);
+  });
+
+  test("classic events triggered on movable pure node are not redirected", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
@@ -383,20 +436,35 @@ test("events triggered on movable owl components are redirected", async () => {
     await parent.mount(fixture);
 
     expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-    const ev = new Event('custom');
-    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    outside.querySelector('#trigger-me')!.dispatchEvent(new Event('custom'));
     await nextTick();
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">triggered</span>`);
+    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
   });
 
   test("Handlers are re-affected on rerender", async () => {
+    class Child extends Component<any, any> {
+      static template = xml`
+        <span t-esc="props.val" t-on-click="_btClicked"/>`;
+
+      _btClicked() {
+        this.trigger('custom');
+      }
+    }
+    class Child2 extends Component<any, any> {
+      static template = xml`
+        <div t-esc="props.val" t-on-click="_btClicked"/>`;
+
+      _btClicked() {
+        this.trigger('custom');
+      }
+    }
     class Parent extends Component<any, any> {
-      static components = { Portal };
+      static components = { Portal , Child , Child2 };
       static template = xml`
         <div>
           <Portal target="'#outside'" t-on-custom="_onCustom(state.val)">
-            <span t-if="state.val === 'ab'" id="trigger-me" t-esc="state.val"/>
-            <div t-else="" id="trigger-me" t-esc="state.val" />
+            <span t-if="state.val === 'ab'" t-component="Child" val="state.val"/>
+            <div t-else="" t-component="Child2" val="state.val"/>
           </Portal>
         </div>`;
         state = useState({ val: 'ab'});
@@ -411,57 +479,25 @@ test("events triggered on movable owl components are redirected", async () => {
       }
     const parent = new Parent();
     await parent.mount(fixture);
+    expect(outside.innerHTML).toBe(`<span>ab</span>`);
+    const teleported = outside.children[0];
 
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-
-    let ev = new Event('custom');
-    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    teleported.dispatchEvent(new Event('click'));
     await nextTick();
-    expect(outside.innerHTML).toBe(`<div id="trigger-me">triggered</div>`);
+    expect(outside.innerHTML).toBe(`<div>triggered</div>`);
+    const newTeleported = outside.children[0];
+    expect(teleported === newTeleported).toBeFalsy();
 
-    ev = new Event('custom');
-    outside.querySelector('#trigger-me')!.dispatchEvent(ev);
+    // Simulates click again and see it fails
+    // This part ensures old handlers have been deleted
+    teleported.dispatchEvent(new Event('click'));
     await nextTick();
-    expect(outside.innerHTML).toBe(`<div id="trigger-me">second trigger</div>`);
-  });
+    expect(outside.innerHTML).toBe(`<div>triggered</div>`);
+    expect(newTeleported === outside.children[0]).toBeTruthy();
 
-  test("Handlers are correctly unbound when changed", async () => {
-    class Parent extends Component<any, any> {
-      static components = { Portal };
-      static template = xml`
-        <div>
-          <Portal target="'#outside'" t-on-custom="_onCustom(state.val)">
-            <span t-if="state.val === 'ab'" id="trigger-me" t-esc="state.val"/>
-            <div t-else="" id="trigger-me" t-esc="state.val"/>
-          </Portal>
-        </div>`;
-        state = useState({ val: 'ab'});
-
-        _onCustom(val) {
-          if (val === 'ab') {
-            this.state.val = 'triggered';
-          } else if (this.state.val === 'triggered' ) {
-            this.state.val = 'second trigger';
-          }
-        }
-      }
-    const parent = new Parent();
-    await parent.mount(fixture);
-
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-
-    let ev = new Event('custom');
-    const formerOutside = outside.querySelector('#trigger-me');
-    formerOutside!.dispatchEvent(ev);
+    newTeleported.dispatchEvent(new Event('click'));
     await nextTick();
-    expect(outside.innerHTML).toBe(`<div id="trigger-me">triggered</div>`);
-
-    const newOutside = outside.querySelector('#trigger-me');
-    expect(formerOutside).toBeTruthy();
-    expect(formerOutside !== newOutside).toBeTruthy();
-
-    formerOutside!.dispatchEvent(new Event('custom'));
-    await nextTick();
-    expect(outside.innerHTML).toBe(`<div id="trigger-me">triggered</div>`);
+    expect(outside.innerHTML).toBe(`<div>second trigger</div>`);
+    expect(newTeleported === outside.children[0]).toBeTruthy();
   });
 });

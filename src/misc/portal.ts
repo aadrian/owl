@@ -21,10 +21,21 @@ export class Portal extends Component<any, any> {
   static template = xml`<portal><t t-slot="default"/></portal>`;
   // TODO: props validation
 
-  portal: VNode | null = null;
+  // The target where we will move `portal`
   target: HTMLElement | null = null;
-  previousMoveable: Node | null = null;
-  _handlerMapper: Function | EventListener | null = null;
+  // Represents the element that is moved somewhere else
+  portal: VNode | null = null;
+  // A reference to the node before a patch
+  _previousPortalElm: Node | null = null;
+  // A function that will be the event's tunnel
+  // This needs to be an arrow function to avoid having to rebind `this`
+  _handlerTunnel: Function | EventListener = (ev: Event) => {
+    if (ev instanceof CustomEvent) {
+      const mappedEvent = new (ev.constructor as any)(ev.type, ev);
+      ev.stopPropagation();
+      this.el!.dispatchEvent(mappedEvent);
+    }
+   };
 
   _deployPortal() {
     const portalElm = this.portal!.elm!;
@@ -62,30 +73,26 @@ export class Portal extends Component<any, any> {
   }
 
   _bindPortalEvents() {
-    this._handlerMapper = (ev: Event) => {
-      const mappedEvent = new (ev.constructor as any)(ev.type, ev);
-      ev.stopPropagation();
-      this.el!.dispatchEvent(mappedEvent);
-    }
     for (let evName of QWeb.eventNamesRegistry) {
-      this.portal!.elm!.addEventListener(evName, this._handlerMapper as EventListener);
+      this.portal!.elm!.addEventListener(evName, this._handlerTunnel as EventListener);
     }
   }
 
   _unBindPortalEvents() {
-    if (!this.previousMoveable) {
+    if (!this._previousPortalElm) {
       return;
     }
     for (let evName of QWeb.eventNamesRegistry) {
-      this.previousMoveable.removeEventListener(evName, this._handlerMapper as EventListener);
+      this._previousPortalElm.removeEventListener(evName, this._handlerTunnel as EventListener);
     }
-    this._handlerMapper = null;
   }
 
   _sanityChecks(vnode: VNode) {
     const children = vnode.children!;
-    if (children.length !== 1) {
-      throw new Error(`Portal must have exactly one child (has ${children.length})`);
+    if (children.length !== 1 || !(children[0] as any).sel) {
+      const tagChildren =
+        children.length === 1 && !(children[0] as any).sel ? 0 : children.length;
+      throw new Error(`Portal must have exactly one non-text child (has ${tagChildren})`);
     }
     this.target = document.querySelector(this.props.target);
     if (!this.target) {
@@ -95,10 +102,10 @@ export class Portal extends Component<any, any> {
 
   _makeEventHandling() {
     const portalElm = this.portal!.elm!;
-    if (!this.previousMoveable || this.previousMoveable !== portalElm) {
+    if (!this._previousPortalElm || this._previousPortalElm !== portalElm) {
       this._unBindPortalEvents();
       this._bindPortalEvents();
-      this.previousMoveable = portalElm;
+      this._previousPortalElm = portalElm;
     }
   }
 }
