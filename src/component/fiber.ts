@@ -177,6 +177,7 @@ export class Fiber {
    */
   complete() {
     const component = this.component;
+    this.isCompleted = true;
     if (this.target) {
       component.__patch(this.vnode);
       this.target.appendChild(component.el!);
@@ -215,7 +216,6 @@ export class Fiber {
         }
       }
     }
-    this.isCompleted = true;
   }
 
   /**
