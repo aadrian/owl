@@ -292,7 +292,7 @@ export class Component<T extends Env, Props extends {}> {
       throw new Error(message);
     }
     const fiber = new Fiber(null, this, undefined, undefined, false, target);
-    fiber.shouldPatch = false
+    fiber.shouldPatch = false;
     if (!__owl__.vnode) {
       this.__prepareAndRender(fiber);
     } else {
@@ -442,13 +442,7 @@ export class Component<T extends Env, Props extends {}> {
 
   __callMounted() {
     const __owl__ = this.__owl__;
-    const children = __owl__.children;
-    for (let id in children) {
-      const comp = children[id];
-      if (!comp.__owl__.isMounted && this.el!.contains(comp.el)) {
-        comp.__callMounted();
-      }
-    }
+
     __owl__.isMounted = true;
     __owl__.currentFiber = null;
     this.mounted();
@@ -458,6 +452,7 @@ export class Component<T extends Env, Props extends {}> {
   }
 
   __callWillUnmount() {
+    // TODO: cancel current fiber maybe?
     const __owl__ = this.__owl__;
     if (__owl__.willUnmountCB) {
       __owl__.willUnmountCB();
@@ -634,9 +629,6 @@ export class Component<T extends Env, Props extends {}> {
       (<any>vnode).data.class = Object.assign((<any>vnode).data.class || {}, __owl__.classObj);
     }
     __owl__.vnode = patch(elm, vnode);
-    if (__owl__.parent!.__owl__.isMounted && !__owl__.isMounted) {
-      this.__callMounted();
-    }
     return __owl__.vnode;
   }
 

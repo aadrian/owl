@@ -2441,10 +2441,10 @@ describe("random stuff/miscellaneous", () => {
       "C:__patch(from __mount)",
       "D:__patch(from __mount)",
       "E:__patch(from __mount)",
-      "B:mounted",
-      "D:mounted",
       "E:mounted",
+      "D:mounted",
       "C:mounted",
+      "B:mounted",
       "A:mounted"
     ]);
 
@@ -2464,9 +2464,9 @@ describe("random stuff/miscellaneous", () => {
       "C:__patch",
       "E:willUnmount",
       "E:destroy",
+      "D:__patch",
       "F:__patch(from __mount)",
       "F:mounted",
-      "D:__patch",
       "D:patched",
       "C:patched"
     ]);
@@ -4696,7 +4696,7 @@ describe("component error handling (catchError)", () => {
         <div>
             <ErrorBoundary t-if="state.flag"><ErrorComponent /></ErrorBoundary>
         </div>`;
-      state = useState({flag: false});
+      state = useState({ flag: false });
       static components = { ErrorBoundary, ErrorComponent };
     }
     const app = new App();
@@ -5379,6 +5379,39 @@ describe("unmounting and remounting", () => {
     expect(TestWidget.prototype.__render).toHaveBeenCalledTimes(3);
     expect(TestWidget.prototype.__patch).toHaveBeenCalledTimes(2);
     expect(steps).toEqual([2, 2, 3]);
+  });
+
+  test("change state while component is unmounted", async () => {
+    let child;
+    class Child extends Component<any, any> {
+      static template = xml`<span t-esc="state.val"/>`;
+      state = useState({
+        val: "C1"
+      });
+      constructor(parent, props) {
+        super(parent, props);
+        child = this;
+      }
+    }
+
+    class Parent extends Component<any, any> {
+      static components = { Child };
+      static template = xml`<div><t t-esc="state.val"/><Child/></div>`;
+      state = useState({ val: "P1" });
+    }
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+    expect(fixture.innerHTML).toBe("<div>P1<span>C1</span></div>");
+
+    parent.unmount();
+    expect(fixture.innerHTML).toBe("");
+
+    parent.state.val = "P2";
+    child.state.val = "C2";
+
+    await parent.mount(fixture);
+    expect(fixture.innerHTML).toBe("<div>P2<span>C2</span></div>");
   });
 });
 

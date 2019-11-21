@@ -27,9 +27,11 @@ exports[`animations t-transition combined with component 1`] = `
         let W3 = context.constructor.components[componentKey3] || QWeb.components[componentKey3]|| context['Child'];
         if (!W3) {throw new Error('Cannot find the definition of component \\"' + componentKey3 + '\\"')}
         w3 = new W3(parent, props3);
+        const __mount3 = w3.__mount;
+        w3.__mount = (fiber, elm) => {const vn = __mount3.call(w3, fiber, elm); utils.transitionInsert(vn, 'chimay'); return vn;};
         parent.__owl__.cmap[k4] = w3.__owl__.id;
         let def2 = w3.__prepare(extra.fiber, undefined, undefined);
-        let pvnode = h('dummy', {key: k4, hook: {insert(vn) { let nvn=w3.__mount(fiber, pvnode.elm);pvnode.elm=nvn.elm;utils.transitionInsert(vn, 'chimay');},remove() {},destroy(vn) {let finalize = () => {
+        let pvnode = h('dummy', {key: k4, hook: {remove() {},destroy(vn) {let finalize = () => {
           w3.destroy();
         };
         utils.transitionRemove(vn, 'chimay', finalize);}}});
@@ -71,9 +73,11 @@ exports[`animations t-transition combined with t-component and t-if 1`] = `
             let W3 = context.constructor.components[componentKey3] || QWeb.components[componentKey3]|| context['Child'];
             if (!W3) {throw new Error('Cannot find the definition of component \\"' + componentKey3 + '\\"')}
             w3 = new W3(parent, props3);
+            const __mount3 = w3.__mount;
+            w3.__mount = (fiber, elm) => {const vn = __mount3.call(w3, fiber, elm); utils.transitionInsert(vn, 'chimay'); return vn;};
             parent.__owl__.cmap[k4] = w3.__owl__.id;
             let def2 = w3.__prepare(extra.fiber, undefined, undefined);
-            let pvnode = h('dummy', {key: k4, hook: {insert(vn) { let nvn=w3.__mount(fiber, pvnode.elm);pvnode.elm=nvn.elm;utils.transitionInsert(vn, 'chimay');},remove() {},destroy(vn) {let finalize = () => {
+            let pvnode = h('dummy', {key: k4, hook: {remove() {},destroy(vn) {let finalize = () => {
           w3.destroy();
         };
         utils.transitionRemove(vn, 'chimay', finalize);}}});
