@@ -1423,7 +1423,7 @@ class App extends Component {
     state = useState({
         name: 'Portal used for Dialog (Modal)',
         dialog: false,
-        dialogMsg: 'This is a within a Portal',
+        dialogMsg: 'This is within a Portal',
     });
 }
 App.components = { Dialog , Interstellar };

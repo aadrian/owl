@@ -89,10 +89,13 @@ export class Portal extends Component<any, any> {
 
   _sanityChecks(vnode: VNode) {
     const children = vnode.children!;
-    if (children.length !== 1 || !(children[0] as any).sel) {
-      const tagChildren =
-        children.length === 1 && !(children[0] as any).sel ? 0 : children.length;
-      throw new Error(`Portal must have exactly one non-text child (has ${tagChildren})`);
+    let countRealNodes = 0;
+    for (let child of children) {
+      if ((child as VNode).sel)
+        countRealNodes++;
+    }
+    if (countRealNodes !== 1) {
+      throw new Error(`Portal must have exactly one non-text child (has ${countRealNodes})`);
     }
     this.target = document.querySelector(this.props.target);
     if (!this.target) {
