@@ -509,8 +509,8 @@ test("events triggered on movable owl components are redirected", async () => {
       'load', 'tralala'
     ];
 
-    const concatTOn = (acc, curr) => {
-      return acc + ` t-on-${curr}='_handled'`;
+    const concatTOn = (acc, ev) => {
+      return acc + ` t-on-${ev}='_handled'`;
     }
     const computedHandlers: string = allEvents.reduce(concatTOn, '');
 
@@ -545,5 +545,39 @@ test("events triggered on movable owl components are redirected", async () => {
       childInst!.trigger(ev);
     }
     expect(steps).toEqual(['tralala']);
+  });
+  /**
+   * UI Stuff
+   */
+  test("focus is kept across re-renders", async () => {
+    class Child extends Component<any, any> {
+      static template = xml`
+        <input id="target-me" t-att-placeholder="props.val"/>`;
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal , Child };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <Child val="state.val"/>
+          </Portal>
+        </div>`;
+        state = useState({ val: 'ab'});
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+    const input = document.querySelector('#target-me');
+    expect(input!.nodeName).toBe('INPUT');
+    expect((input as HTMLInputElement).placeholder).toBe('ab');
+
+    (input as HTMLInputElement).focus()
+    expect(document.activeElement === input).toBeTruthy();
+
+    parent.state.val = 'bc';
+    await nextTick();
+    const inputReRendered = document.querySelector('#target-me');
+    expect(inputReRendered!.nodeName).toBe('INPUT');
+    expect((inputReRendered as HTMLInputElement).placeholder).toBe('bc');
+    expect(document.activeElement === inputReRendered).toBeTruthy();
   });
 });
