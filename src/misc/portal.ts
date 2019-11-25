@@ -2,6 +2,7 @@ import { Component } from "../component/component";
 import { VNode , patch } from "../vdom/index";
 import { xml } from "../tags";
 import { QWeb } from "../qweb/index";
+import { OwlEvent } from "../core/owl_event";
 
 /**
  * Portal
@@ -29,13 +30,21 @@ export class Portal extends Component<any, any> {
   _previousPortalElm: Node | null = null;
   // A function that will be the event's tunnel
   // This needs to be an arrow function to avoid having to rebind `this`
-  _handlerTunnel: (f: Event) => void = (ev: Event) => {
-    if (ev instanceof CustomEvent) {
-      const mappedEvent = new (ev.constructor as any)(ev.type, ev);
-      ev.stopPropagation();
-      this.el!.dispatchEvent(mappedEvent);
-    }
+  _handlerTunnel: (f: OwlEvent<any>) => void = (ev: OwlEvent<any>) => {
+    ev.stopPropagation();
+    this.trigger(ev.type, ev.detail);
    };
+
+   constructor(parent, props) {
+    super(parent, props);
+    this.env = Object.create(this.env);
+    this.env._preTriggerHook = (ev) => {
+      this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel)
+    }
+    this.env._postTriggerHook = (ev) => {
+      this.portal!.elm!.removeEventListener(ev.type, this._handlerTunnel)
+    }
+   }
 
   _deployPortal() {
     const portalElm = this.portal!.elm!;

@@ -159,6 +159,7 @@ export class Component<T extends Env, Props extends {}> {
       });
       depth = 0;
     }
+    this.env._preTriggerHook = this.env._preTriggerHook || null;
 
     const qweb = this.env.qweb;
     const template = constr.template || this.__getTemplate(qweb);
