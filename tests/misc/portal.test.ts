@@ -377,11 +377,12 @@ test("events triggered on movable owl components are redirected", async () => {
     expect(outside.innerHTML).toBe(`<span>triggered</span>`);
   });
 
-test("events triggered on movable owl components are redirected", async () => {
+test("events triggered on contained movable owl components are redirected", async () => {
+  const steps: string[] = [];
     let childInst: Component<any, any> | null = null;
     class Child extends Component<any, any> {
        static template = xml`
-         <span t-on-custom="_onCustom" t-esc="props.val"/>`
+         <span t-on-custom="_onCustom"/>`
 
         constructor(parent, props) {
           super(parent, props);
@@ -395,26 +396,60 @@ test("events triggered on movable owl components are redirected", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal, Child };
       static template = xml`
-        <div t-on-custom-portal="_onCustomPortal">
+        <div t-on-custom="_handled" t-on-custom-portal="_handled">
           <Portal target="'#outside'">
             <div>
-              <Child val="state.val"/>
+              <Child/>
             </div>
           </Portal>
         </div>`;
-        state = useState({ val: 'ab'});
 
-       _onCustomPortal() {
-         this.state.val = 'triggered';
+       _handled(ev) {
+         steps.push(ev.type);
        }
       }
     const parent = new Parent();
     await parent.mount(fixture);
 
-    expect(outside.innerHTML).toBe(`<div><span>ab</span></div>`);
     childInst!.trigger('custom');
     await nextTick();
-    expect(outside.innerHTML).toBe(`<div><span>triggered</span></div>`);
+    // TODO: Check this, order issue !
+    expect(steps).toMatchObject(['custom-portal', 'custom']);
+  });
+
+  test("events are mapped when env is Object", async () => {
+    const steps: string[] = [];
+    let childInst: Component<any, any> | null = null;
+    class Child extends Component<any, any> {
+       static template = xml`
+         <span/>`
+
+        constructor(parent, props) {
+          super(parent, props);
+          childInst = this;
+        }
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal, Child };
+      static template = xml`
+        <div t-on-custom="_handled">
+          <Portal target="'#outside'">
+            <div>
+              <Child/>
+            </div>
+          </Portal>
+        </div>`;
+
+       _handled(ev) {
+         steps.push(ev.type);
+       }
+      }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    childInst!.trigger('custom');
+    await nextTick();
+    expect(steps).toMatchObject(['custom']);
   });
 
   test("Dom events are not mapped", async () => {
@@ -481,6 +516,47 @@ test("events triggered on movable owl components are redirected", async () => {
           <Portal target="'#outside'">
             <Child/>
           </Portal>
+        </div>`;
+
+      _handled(ev) {
+        steps.push(ev.type as string);
+      }
+    }
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+    expect(parent.env._preTriggerHook).toBeUndefined();
+    expect(parent.env._postTriggerHook).toBeUndefined();
+
+    childInst!.trigger('custom');
+    expect(steps).toEqual(['custom']);
+  });
+
+  // TODO
+  test('Portal composed with t-slot', async () => {
+    const steps: Array<string> = [];
+    let childInst: Component<any, any> | null = null;
+    class Child2 extends Component<any, any> {
+      static template = xml`<div>child2</div>`;
+      constructor(parent, props) {
+          super(parent, props);
+          childInst = this;
+        }
+    }
+    class Child extends Component<any, any> {
+      static components = { Portal , Child2 };
+      static template = xml`
+        <Portal target="'#outside'">
+          <t t-slot="default"/>
+        </Portal>`;
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal , Child , Child2};
+      static template = xml`
+        <div t-on-custom='_handled'>
+          <Child>
+            <Child2/>
+          </Child>
         </div>`;
 
       _handled(ev) {
