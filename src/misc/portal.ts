@@ -1,7 +1,6 @@
 import { Component } from "../component/component";
 import { VNode , patch } from "../vdom/index";
 import { xml } from "../tags";
-import { QWeb } from "../qweb/index";
 import { OwlEvent } from "../core/owl_event";
 
 /**
@@ -26,8 +25,6 @@ export class Portal extends Component<any, any> {
   target: HTMLElement | null = null;
   // Represents the element that is moved somewhere else
   portal: VNode | null = null;
-  // A reference to the node before a patch
-  _previousPortalElm: Node | null = null;
   // A function that will be the event's tunnel
   // This needs to be an arrow function to avoid having to rebind `this`
   _handlerTunnel: (f: OwlEvent<any>) => void = (ev: OwlEvent<any>) => {
@@ -58,7 +55,6 @@ export class Portal extends Component<any, any> {
     const target = this.portal || document.createElement(vnode.sel!)
     this.portal = patch(target!, vnode.children![0] as VNode);
     vnode.children = [];
-    this._makeEventHandling();
     super.__patch(vnode);
   }
 
@@ -68,7 +64,6 @@ export class Portal extends Component<any, any> {
     this.portal = vnode.children![0] as VNode;
     vnode.children = [];
     this._deployPortal();
-    this._makeEventHandling();
     super.__callMounted();
   }
 
@@ -79,21 +74,6 @@ export class Portal extends Component<any, any> {
       parent && parent.removeChild(displacedElm);
     }
     super.__destroy(parent);
-  }
-
-  _bindPortalEvents() {
-    for (let evName of QWeb.eventNamesRegistry) {
-      this.portal!.elm!.addEventListener(evName, this._handlerTunnel as EventListener);
-    }
-  }
-
-  _unBindPortalEvents() {
-    if (!this._previousPortalElm) {
-      return;
-    }
-    for (let evName of QWeb.eventNamesRegistry) {
-      this._previousPortalElm.removeEventListener(evName, this._handlerTunnel as EventListener);
-    }
   }
 
   _sanityChecks(vnode: VNode) {
@@ -109,15 +89,6 @@ export class Portal extends Component<any, any> {
     this.target = document.querySelector(this.props.target);
     if (!this.target) {
       throw new Error(`Could not find any match for "${this.props.target}"`);
-    }
-  }
-
-  _makeEventHandling() {
-    const portalElm = this.portal!.elm!;
-    if (!this._previousPortalElm || this._previousPortalElm !== portalElm) {
-      this._unBindPortalEvents();
-      this._bindPortalEvents();
-      this._previousPortalElm = portalElm;
     }
   }
 }

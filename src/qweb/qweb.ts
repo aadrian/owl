@@ -70,15 +70,6 @@ const DISABLED_TAGS = ["input", "textarea", "button", "select", "option", "optgr
 
 const TRANSLATABLE_ATTRS = ["label", "title", "placeholder", "alt"];
 
-// Most common events susceptible to be listened to
-// in Owl templates
-const DOM_EVENTS_RE: RegExp = new RegExp(
-  "(aux|dbl)?click|mouse[a-z]+|" + // mouse events
-  "keyup|keydown|keypress|" + // keyboard events
-  "drag[a-z]*|" +
-  "load[a-z]*|" + // progress events, useful for iframe
-  "focus|blur");
-
 const lineBreakRE = /[\r\n]/;
 const whitespaceRE = /\s+/g;
 
@@ -155,7 +146,6 @@ export class QWeb extends EventBus {
   templates: { [name: string]: Template };
   static utils = UTILS;
   static components = Object.create(null);
-  static eventNamesRegistry: Set<string> = new Set();
 
   static DIRECTIVE_NAMES: { [key: string]: 1 } = {
     name: 1,
@@ -206,12 +196,6 @@ export class QWeb extends EventBus {
     QWeb.DIRECTIVES.sort((d1, d2) => d1.priority - d2.priority);
     if (directive.extraNames) {
       directive.extraNames.forEach(n => (QWeb.DIRECTIVE_NAMES[n] = 1));
-    }
-  }
-
-  static addEventToRegistry(evName: string) {
-    if (!DOM_EVENTS_RE.test(evName)) {
-      QWeb.eventNamesRegistry.add(evName);
     }
   }
 

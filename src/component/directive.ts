@@ -206,7 +206,6 @@ QWeb.addDirective({
       const value = attributes[i].textContent!;
       if (name.startsWith("t-on-")) {
         const [eventName, ...mods] = name.slice(5).split(".");
-        QWeb.addEventToRegistry(eventName);
         let extraArgs;
         let handlerValue = value.replace(/\(.*\)/, function(args) {
           extraArgs = args.slice(1, -1);

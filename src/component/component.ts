@@ -105,6 +105,8 @@ export class Component<T extends Env, Props extends {}> {
 
   env: T;
   props: Props;
+  _preTriggerHook: null | ((ev: OwlEvent<any>) => void) = null;
+  _postTriggerHook: null | ((ev: OwlEvent<any>) => void) = null;
 
   //--------------------------------------------------------------------------
   // Lifecycle
@@ -159,7 +161,8 @@ export class Component<T extends Env, Props extends {}> {
       });
       depth = 0;
     }
-    this.env._preTriggerHook = this.env._preTriggerHook || null;
+    this._preTriggerHook = this.env._preTriggerHook || null;
+    this._postTriggerHook = this.env._postTriggerHook || null;
 
     const qweb = this.env.qweb;
     const template = constr.template || this.__getTemplate(qweb);
@@ -395,7 +398,14 @@ export class Component<T extends Env, Props extends {}> {
         cancelable: true,
         detail: payload
       });
+      if (this._preTriggerHook) {
+        this._preTriggerHook(ev);
+      }
       this.el.dispatchEvent(ev);
+      if (this._postTriggerHook) {
+        this._postTriggerHook(ev);
+      }
+
     }
   }
 

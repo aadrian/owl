@@ -417,107 +417,12 @@ test("events triggered on movable owl components are redirected", async () => {
     expect(outside.innerHTML).toBe(`<div><span>triggered</span></div>`);
   });
 
-  test("classic events triggered on movable pure node are not redirected", async () => {
-    class Parent extends Component<any, any> {
-      static components = { Portal };
-      static template = xml`
-        <div>
-          <Portal target="'#outside'" t-on-custom="_onCustom">
-            <span id="trigger-me" t-esc="state.val"/>
-          </Portal>
-        </div>`;
-        state = useState({ val: 'ab'});
-
-        _onCustom() {
-          this.state.val = 'triggered';
-        }
-      }
-    const parent = new Parent();
-    await parent.mount(fixture);
-
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-    outside.querySelector('#trigger-me')!.dispatchEvent(new Event('custom'));
-    await nextTick();
-    expect(outside.innerHTML).toBe(`<span id="trigger-me">ab</span>`);
-  });
-
-  test("Handlers are re-affected on rerender", async () => {
-    class Child extends Component<any, any> {
-      static template = xml`
-        <span t-esc="props.val" t-on-click="_btClicked"/>`;
-
-      _btClicked() {
-        this.trigger('custom');
-      }
-    }
-    class Child2 extends Component<any, any> {
-      static template = xml`
-        <div t-esc="props.val" t-on-click="_btClicked"/>`;
-
-      _btClicked() {
-        this.trigger('custom');
-      }
-    }
-    class Parent extends Component<any, any> {
-      static components = { Portal , Child , Child2 };
-      static template = xml`
-        <div>
-          <Portal target="'#outside'" t-on-custom="_onCustom(state.val)">
-            <span t-if="state.val === 'ab'" t-component="Child" val="state.val"/>
-            <div t-else="" t-component="Child2" val="state.val"/>
-          </Portal>
-        </div>`;
-        state = useState({ val: 'ab'});
-
-        _onCustom(val) {
-          if (val === 'ab') {
-            this.state.val = 'triggered';
-          } else if (this.state.val === 'triggered' ) {
-            this.state.val = 'second trigger';
-          }
-        }
-      }
-    const parent = new Parent();
-    await parent.mount(fixture);
-    expect(outside.innerHTML).toBe(`<span>ab</span>`);
-    const teleported = outside.children[0];
-
-    teleported.dispatchEvent(new Event('click'));
-    await nextTick();
-    expect(outside.innerHTML).toBe(`<div>triggered</div>`);
-    const newTeleported = outside.children[0];
-    expect(teleported === newTeleported).toBeFalsy();
-
-    // Simulates click again and see it fails
-    // This part ensures old handlers have been deleted
-    teleported.dispatchEvent(new Event('click'));
-    await nextTick();
-    expect(outside.innerHTML).toBe(`<div>triggered</div>`);
-    expect(newTeleported === outside.children[0]).toBeTruthy();
-
-    newTeleported.dispatchEvent(new Event('click'));
-    await nextTick();
-    expect(outside.innerHTML).toBe(`<div>second trigger</div>`);
-    expect(newTeleported === outside.children[0]).toBeTruthy();
-  });
-
-  test("Most dom events are blacklisted from mapping", async () => {
-    const steps: string[] = [];
-    const allEvents = [
-      'keypress', 'keyup', 'keydown',
-      'mouseenter', 'mouseout', 'mouseup', 'click',
-      'load', 'tralala'
-    ];
-
-    const concatTOn = (acc, ev) => {
-      return acc + ` t-on-${ev}='_handled'`;
-    }
-    const computedHandlers: string = allEvents.reduce(concatTOn, '');
-
+  test("Dom events are not mapped", async () => {
     let childInst: Component<any, any> | null = null;
+    const steps: string[] = [];
     class Child extends Component<any, any> {
       static template = xml`
-        <span>child</span>`;
+        <button>child</button>`;
 
       constructor(parent, props) {
           super(parent, props);
@@ -527,9 +432,54 @@ test("events triggered on movable owl components are redirected", async () => {
     class Parent extends Component<any, any> {
       static components = { Portal , Child };
       static template = xml`
-        <div>
-          <Portal target="'#outside'" ${computedHandlers}>
+        <div t-on-click="_handled">
+          <Portal target="'#outside'">
             <Child />
+          </Portal>
+        </div>`;
+
+      _handled(ev) {
+        steps.push(ev.type as string);
+      }
+    }
+    document.body.addEventListener('click', (ev) => {
+      steps.push(`body: ${ev.type}`);
+    });
+
+    const parent = new Parent();
+    await parent.mount(fixture);
+    childInst!.el!.click();
+
+    expect(steps).toEqual(['body: click']);
+  });
+
+  test("Nested portals event propagation", async () => {
+    const outside2 = document.createElement("div");
+    outside2.setAttribute("id", "outside2");
+    fixture.appendChild(outside2);
+
+    const steps: Array<string> = [];
+    let childInst: Component<any, any> | null = null;
+    class Child2 extends Component<any, any> {
+      static template = xml`<div>child2</div>`;
+      constructor(parent, props) {
+          super(parent, props);
+          childInst = this;
+        }
+    }
+    class Child extends Component<any, any> {
+      static components = { Portal , Child2 };
+      static template = xml`
+        <Portal target="'#outside2'">
+          <Child2 />
+        </Portal>`;
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal , Child };
+      static template = xml`
+        <div t-on-custom='_handled'>
+          <Portal target="'#outside'">
+            <Child/>
           </Portal>
         </div>`;
 
@@ -541,10 +491,8 @@ test("events triggered on movable owl components are redirected", async () => {
     const parent = new Parent();
     await parent.mount(fixture);
 
-    for (let ev of allEvents) {
-      childInst!.trigger(ev);
-    }
-    expect(steps).toEqual(['tralala']);
+    childInst!.trigger('custom');
+    expect(steps).toEqual(['custom']);
   });
   /**
    * UI Stuff
