@@ -1410,13 +1410,9 @@ const PORTAL_COMPONENTS = `
 const { Component, useState } = owl;
 const { Portal } = owl.misc;
 
-class Modal extends Component {}
-Modal.components = { Portal };
-
-class Dialog extends Component {}
-Dialog.components = { Modal };
-
 class Interstellar extends Component {}
+class Dialog extends Component {}
+Dialog.components = { Portal, Interstellar };
 
 // Main root component
 class App extends Component {
@@ -1426,7 +1422,7 @@ class App extends Component {
         dialogMsg: 'This is within a Portal',
     });
 }
-App.components = { Dialog , Interstellar };
+App.components = { Dialog };
 
 // Application setup
 const app = new App();
@@ -1435,25 +1431,22 @@ app.mount(document.body);
 
 const PORTAL_XML = `
 <templates>
-  <div t-name="Modal">
+  <t t-name="Dialog">
     <Portal target="'body'">
       <div class="owl-modal-supercontainer">
         <div class="owl-modal-backdrop"></div>
-        <div class="owl-modal-container"><t t-slot="default"/></div>
-      </div>
-    </Portal>
-  </div>
-
-  <t t-name="Dialog">
-    <Modal>
-      <div class="owl-dialog-container" >
-        <div class="owl-dialog-content">
-          <div class="owl-dialog-body">
-            <t t-slot="default"/>
+        <div class="owl-modal-container">
+          <div class="owl-dialog-container" >
+            <div class="owl-dialog-content">
+              <div class="owl-dialog-body">
+                <t t-slot="default" />
+                <Interstellar />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </Modal>
+    </Portal>
   </t>
 
   <t t-name="Interstellar">
@@ -1470,7 +1463,6 @@ const PORTAL_XML = `
     <button t-on-click="state.dialog = true">Open Dialog</button>
     <Dialog t-if="state.dialog">
       <span t-esc="state.dialogMsg" />
-      <Interstellar />
     </Dialog>
   </div>
 </templates>
