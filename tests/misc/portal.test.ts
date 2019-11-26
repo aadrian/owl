@@ -487,7 +487,7 @@ test("events triggered on contained movable owl components are redirected", asyn
         </div>`;
 
       _handled(ev) {
-        steps.push(ev.type as string);
+        steps.push(`${ev.type} from ${ev.originalComponent.constructor.name}`);
       }
     }
 
@@ -496,7 +496,7 @@ test("events triggered on contained movable owl components are redirected", asyn
     expect(parent.env[Portal.portalSymbol]).toBeUndefined();
 
     childInst!.trigger('custom');
-    expect(steps).toEqual(['custom']);
+    expect(steps).toEqual(['custom from Child2']);
   });
 
   // TODO: is a genuine owl issue

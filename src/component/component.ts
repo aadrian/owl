@@ -391,17 +391,7 @@ export class Component<T extends Env, Props extends {}> {
    * willUnmount().
    */
   trigger(eventType: string, payload?: any) {
-    if (this.el) {
-      const ev = new OwlEvent(this, eventType, {
-        bubbles: true,
-        cancelable: true,
-        detail: payload
-      });
-      if (this._triggerHook) {
-        this._triggerHook(ev);
-      }
-      this.el.dispatchEvent(ev);
-    }
+    return this.__trigger(this, eventType, payload);
   }
 
   //--------------------------------------------------------------------------
@@ -475,6 +465,24 @@ export class Component<T extends Env, Props extends {}> {
       if (comp.__owl__.isMounted) {
         comp.__callWillUnmount();
       }
+    }
+  }
+  /**
+   * Private trigger method, allows to choose the component which triggered
+   * the event in the first place
+   *
+   */
+  __trigger(component: Component<any, any>, eventType: string, payload?: any) {
+    if (this.el) {
+      const ev = new OwlEvent(component, eventType, {
+        bubbles: true,
+        cancelable: true,
+        detail: payload
+      });
+      if (this._triggerHook) {
+        this._triggerHook(ev);
+      }
+      this.el.dispatchEvent(ev);
     }
   }
 

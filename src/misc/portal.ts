@@ -31,7 +31,7 @@ export class Portal extends Component<any, any> {
   // This needs to be an arrow function to avoid having to rebind `this`
   _handlerTunnel: (f: OwlEvent<any>) => void = (ev: OwlEvent<any>) => {
     ev.stopPropagation();
-    this.trigger(ev.type, ev.detail);
+    this.__trigger(ev.originalComponent, ev.type, ev.detail);
    };
   // A Set of encountered event that need to be redirected
   _handledEvents: Set<string> = new Set();
