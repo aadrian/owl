@@ -2,6 +2,7 @@ import { Component } from "../component/component";
 import { VNode , patch } from "../vdom/index";
 import { xml } from "../tags";
 import { OwlEvent } from "../core/owl_event";
+import { useSubEnv } from "../hooks";
 
 /**
  * Portal
@@ -32,22 +33,27 @@ export class Portal extends Component<any, any> {
     this.trigger(ev.type, ev.detail);
    };
 
+  _handledEvents: Set<string> = new Set();
+
    constructor(parent, props) {
     super(parent, props);
-    this.env = Object.create(this.env);
-    this.env._preTriggerHook = (ev) => {
-      this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel)
-    }
-    this.env._postTriggerHook = (ev) => {
-      this.portal!.elm!.removeEventListener(ev.type, this._handlerTunnel)
-    }
-   }
+    useSubEnv({
+      _triggerHook: (ev) => {
+        if (!this._handledEvents.has(ev.type)) {
+          this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel);
+          this._handledEvents.add(ev.type);
+        }
+      }
+   });
+  }
 
   _deployPortal() {
     const portalElm = this.portal!.elm!;
     this.target!.appendChild(portalElm);
     const owlChildren = Object.values(this.__owl__.children);
-    owlChildren.length && owlChildren[0].__callMounted();
+    for (let child of owlChildren) {
+      child.__callMounted();
+    }
   }
 
   __patch(vnode) {
@@ -71,7 +77,9 @@ export class Portal extends Component<any, any> {
     if (this.portal) {
       const displacedElm = this.portal.elm!;
       const parent = displacedElm.parentNode;
-      parent && parent.removeChild(displacedElm);
+      if (parent) {
+        parent.removeChild(displacedElm);
+      }
     }
     super.__destroy(parent);
   }
