@@ -6,6 +6,7 @@ import "./directive";
 import { Fiber } from "./fiber";
 import "./props_validation";
 import { Scheduler, scheduler } from "./scheduler";
+import { Portal } from "../misc/portal";
 
 /**
  * Owl Component System
@@ -160,7 +161,7 @@ export class Component<T extends Env, Props extends {}> {
       });
       depth = 0;
     }
-    this._triggerHook = this.env._triggerHook || null;
+    this._triggerHook = this.env[Portal.portalSymbol as any] || null;
 
     const qweb = this.env.qweb;
     const template = constr.template || this.__getTemplate(qweb);

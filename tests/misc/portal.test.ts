@@ -418,41 +418,6 @@ test("events triggered on contained movable owl components are redirected", asyn
     expect(steps).toMatchObject(['custom-portal', 'custom']);
   });
 
-  test("events are mapped when env is Object", async () => {
-    const steps: string[] = [];
-    let childInst: Component<any, any> | null = null;
-    class Child extends Component<any, any> {
-       static template = xml`
-         <span/>`
-
-        constructor(parent, props) {
-          super(parent, props);
-          childInst = this;
-        }
-    }
-    class Parent extends Component<any, any> {
-      static components = { Portal, Child };
-      static template = xml`
-        <div t-on-custom="_handled">
-          <Portal target="'#outside'">
-            <div>
-              <Child/>
-            </div>
-          </Portal>
-        </div>`;
-
-       _handled(ev) {
-         steps.push(ev.type);
-       }
-      }
-    const parent = new Parent();
-    await parent.mount(fixture);
-
-    childInst!.trigger('custom');
-    await nextTick();
-    expect(steps).toMatchObject(['custom']);
-  });
-
   test("Dom events are not mapped", async () => {
     let childInst: Component<any, any> | null = null;
     const steps: string[] = [];
@@ -478,15 +443,17 @@ test("events triggered on contained movable owl components are redirected", asyn
         steps.push(ev.type as string);
       }
     }
-    document.body.addEventListener('click', (ev) => {
+    const bodyListener = (ev) => {
       steps.push(`body: ${ev.type}`);
-    });
+    }
+    document.body.addEventListener('click', bodyListener);
 
     const parent = new Parent();
     await parent.mount(fixture);
     childInst!.el!.click();
 
     expect(steps).toEqual(['body: click']);
+    document.body.removeEventListener('click', bodyListener);
   });
 
   test("Nested portals event propagation", async () => {
@@ -526,8 +493,7 @@ test("events triggered on contained movable owl components are redirected", asyn
 
     const parent = new Parent();
     await parent.mount(fixture);
-    expect(parent.env._preTriggerHook).toBeUndefined();
-    expect(parent.env._postTriggerHook).toBeUndefined();
+    expect(parent.env[Portal.portalSymbol]).toBeUndefined();
 
     childInst!.trigger('custom');
     expect(steps).toEqual(['custom']);

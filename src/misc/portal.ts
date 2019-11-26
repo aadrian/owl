@@ -19,6 +19,7 @@ import { useSubEnv } from "../hooks";
  */
 
 export class Portal extends Component<any, any> {
+  static portalSymbol = Symbol();
   static template = xml`<portal><t t-slot="default"/></portal>`;
   // TODO: props validation
 
@@ -32,19 +33,18 @@ export class Portal extends Component<any, any> {
     ev.stopPropagation();
     this.trigger(ev.type, ev.detail);
    };
-
+  // A Set of encountered event that need to be redirected
   _handledEvents: Set<string> = new Set();
 
-   constructor(parent, props) {
+  constructor(parent, props) {
     super(parent, props);
-    useSubEnv({
-      _triggerHook: (ev) => {
-        if (!this._handledEvents.has(ev.type)) {
-          this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel);
-          this._handledEvents.add(ev.type);
-        }
+    useSubEnv({});
+    this.env[Portal.portalSymbol] = (ev) => {
+      if (!this._handledEvents.has(ev.type)) {
+        this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel);
+        this._handledEvents.add(ev.type);
       }
-   });
+    }
   }
 
   _deployPortal() {
