@@ -493,10 +493,48 @@ test("events triggered on contained movable owl components are redirected", asyn
 
     const parent = new Parent();
     await parent.mount(fixture);
-    expect(parent.env[Portal.portalSymbol]).toBeUndefined();
 
     childInst!.trigger('custom');
     expect(steps).toEqual(['custom from Child2']);
+  });
+
+  test("portal's parent's env is not polluted", async () => {
+    let childInst: Array<Component<any, any>> = [];
+    class Child extends Component<any, any> {
+      static template = xml`
+        <button>child <t t-esc="props.pos" /></button>`;
+
+      constructor(parent, props) {
+          super(parent, props);
+          childInst.push(this);
+        }
+    }
+    class Child2 extends Child {
+      static components = { Child };
+      static template = xml`
+        <Child pos="'third'"/>`;
+    }
+    class Parent extends Component<any, any> {
+      static components = { Portal , Child , Child2 };
+      static template = xml`
+        <div>
+          <Portal target="'#outside'">
+            <Child pos="'second'"/>
+          </Portal>
+          <Child2 pos="'first'"/>
+        </div>`;
+    }
+    const parent = new Parent();
+    await parent.mount(fixture);
+
+    expect(childInst[0].props.pos).toStrictEqual('first');
+    expect(childInst[0]._triggerHook).toBeNull();
+
+    expect(childInst[1].props.pos).toStrictEqual('second');
+    expect(childInst[1]._triggerHook).toBeTruthy();
+
+    expect(childInst[2].props.pos).toStrictEqual('third');
+    expect(childInst[2]._triggerHook).toBeNull();
   });
 
   // TODO: is a genuine owl issue

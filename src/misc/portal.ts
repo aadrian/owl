@@ -3,6 +3,7 @@ import { VNode , patch } from "../vdom/index";
 import { xml } from "../tags";
 import { OwlEvent } from "../core/owl_event";
 import { useSubEnv } from "../hooks";
+import { portalSymbol } from "./index";
 
 /**
  * Portal
@@ -19,7 +20,6 @@ import { useSubEnv } from "../hooks";
  */
 
 export class Portal extends Component<any, any> {
-  static portalSymbol = Symbol();
   static template = xml`<portal><t t-slot="default"/></portal>`;
   // TODO: props validation
 
@@ -39,7 +39,7 @@ export class Portal extends Component<any, any> {
   constructor(parent, props) {
     super(parent, props);
     useSubEnv({});
-    this.env[Portal.portalSymbol] = (ev) => {
+    this.env[portalSymbol] = (ev) => {
       if (!this._handledEvents.has(ev.type)) {
         this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel);
         this._handledEvents.add(ev.type);
