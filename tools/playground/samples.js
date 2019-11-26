@@ -1410,16 +1410,20 @@ const PORTAL_COMPONENTS = `
 const { Component, useState } = owl;
 const { Portal } = owl.misc;
 
-class Interstellar extends Component {}
 class Dialog extends Component {}
-Dialog.components = { Portal, Interstellar };
+
+class Interstellar extends Component {}
+class Modal extends Component {}
+
+// This is ugly AF, but it is linked to a genuine owl bug
+Portal.components = { Interstellar };
+Dialog.components = { Portal , Modal };
 
 // Main root component
 class App extends Component {
     state = useState({
         name: 'Portal used for Dialog (Modal)',
         dialog: false,
-        dialogMsg: 'This is within a Portal',
     });
 }
 App.components = { Dialog };
@@ -1431,44 +1435,42 @@ app.mount(document.body);
 
 const PORTAL_XML = `
 <templates>
+  <div t-name="Modal" class="owl-modal-supercontainer">
+    <div class="owl-modal-backdrop"></div>
+    <div class="owl-modal-container">
+      <t t-slot="default" />
+    </div>
+  </div>
+
   <t t-name="Dialog">
     <Portal target="'body'">
-      <div class="owl-modal-supercontainer">
-        <div class="owl-modal-backdrop"></div>
-        <div class="owl-modal-container">
-          <div class="owl-dialog-container" >
-            <div class="owl-dialog-content">
-              <div class="owl-dialog-body">
-                <t t-slot="default" />
-                <Interstellar />
-              </div>
-            </div>
-          </div>
+      <Modal>
+        <div class="owl-dialog-body">
+          <Interstellar />
         </div>
-      </div>
+      </Modal>
     </Portal>
   </t>
 
-  <t t-name="Interstellar">
-    <div class="owl-interstellar">
-      <h4>This is a subComponent</h4>
-      <p>The events it triggers will go through the Portal and be teleported
-      on the other side of the wormhole it has created</p>
-      <button t-on-click="trigger('collapse-all')">Close the wormhole</button>
-    </div>
-  </t>
+  <div t-name="Interstellar" class="owl-interstellar">
+    <h4>This is a subComponent</h4>
+    <p>The events it triggers will go through the Portal and be teleported
+    on the other side of the wormhole it has created</p>
+    <button t-on-click="trigger('collapse-all')">Close the wormhole</button>
+  </div>
 
   <div t-name="App" t-on-collapse-all="state.dialog=false">
     <div t-esc="state.name"/>
     <button t-on-click="state.dialog = true">Open Dialog</button>
-    <Dialog t-if="state.dialog">
-      <span t-esc="state.dialogMsg" />
-    </Dialog>
+    <Dialog t-if="state.dialog" />
   </div>
 </templates>
 `;
 
 const PORTAL_CSS = `
+.owl-modal-supercontainer {
+  position: static;
+}
 .owl-modal-backdrop {
     position: fixed;
     top: 0;
@@ -1488,23 +1490,15 @@ const PORTAL_CSS = `
     width: 100%;
     height: 100%;
 }
-.owl-dialog-container {
-    padding: 1.75rem 0;
+.owl-dialog-body {
     max-width: 500px;
     margin: 0 auto;
     position: relative;
-    width: auto;
     display: flex;
-}
-.owl-dialog-content {
-    background-color: #FFFFFF;
-    max-height: 100%;
-    width: 100%;
-    position: relative;
-}
-.owl-dialog-body {
     text-align: center;
     padding: 2rem;
+    background-color: #FFFFFF;
+    max-height: 100%;
 }
 .owl-interstellar {
     border: groove;
