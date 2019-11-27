@@ -391,7 +391,7 @@ export class Component<T extends Env, Props extends {}> {
    * willUnmount().
    */
   trigger(eventType: string, payload?: any) {
-    return this.__trigger(this, eventType, payload);
+    this.__trigger(this, eventType, payload);
   }
 
   //--------------------------------------------------------------------------
@@ -470,7 +470,7 @@ export class Component<T extends Env, Props extends {}> {
   /**
    * Private trigger method, allows to choose the component which triggered
    * the event in the first place
-   *
+   * Returns the result of dispatchEvent or null if nothing has been done
    */
   __trigger(component: Component<any, any>, eventType: string, payload?: any) {
     if (this.el) {
@@ -482,10 +482,10 @@ export class Component<T extends Env, Props extends {}> {
       if (this._triggerHook) {
         this._triggerHook(ev);
       }
-      this.el.dispatchEvent(ev);
+      return this.el.dispatchEvent(ev);
     }
+    return null;
   }
-
   /**
    * The __updateProps method is called by the t-component directive whenever
    * it updates a component (so, when the parent template is rerendered).
