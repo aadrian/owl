@@ -58,6 +58,7 @@ and ultimately just a way for the parent to teleport a piece of its own DOM else
 
 The canonic use-case is to implement a Dialog, where a Component may choose to break the natural
 workflow to help the user put in some data, which it could use later on.
+
 JavaScript:
 ```js
 const { Component } = owl;
@@ -113,6 +114,14 @@ a normal child.
 The events triggered by a child component will be stopped to not bubble outside of the `target`.
 They will, on the other hand, be re-directed onto the `Portal`'s root node and bubble up the DOM
 as if it were triggered by a regular child Component.
+
+Beware that those re-directed events are copies of the original event.
+They have:
+- The same payload.
+- The same `originalComponent` than their original counterpart,
+that is the actual Component that triggered it.
+- A **different** `target` property than their original counterpart.
+The `target` of a re-directed event is necessarily the `Portal`'s root node.
 
 Pure DOM events do not follow this pattern and are free to bubble their natural, unaltered way
 up to the `body`.
