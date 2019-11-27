@@ -21,7 +21,11 @@ import { portalSymbol } from "./index";
 
 export class Portal extends Component<any, any> {
   static template = xml`<portal><t t-slot="default"/></portal>`;
-  // TODO: props validation
+  static props = {
+    target: {
+      type: String,
+    }
+  }
 
   // The target where we will move `portal`
   target: HTMLElement | null = null;
@@ -58,8 +62,7 @@ export class Portal extends Component<any, any> {
 
   __patch(vnode) {
     this._sanityChecks(vnode);
-    const target = this.portal || document.createElement(vnode.sel!)
-    this.portal = patch(target!, vnode.children![0] as VNode);
+    this.portal = patch(this.portal!, vnode.children![0] as VNode);
     vnode.children = [];
     super.__patch(vnode);
   }

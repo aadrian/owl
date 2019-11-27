@@ -3,6 +3,7 @@ import { xml } from "../../src/tags";
 import { makeTestFixture, makeTestEnv, nextTick } from "../helpers";
 import { Component } from "../../src/component/component";
 import { useState } from "../../src/hooks";
+import { QWeb } from "../../src/qweb";
 
 //------------------------------------------------------------------------------
 // Setup and helpers
@@ -33,9 +34,63 @@ afterEach(() => {
 
 describe("Portal", () => {
   /*
+   * PROPS
+   */
+  test("target is mandatory", async () => {
+    const dev = QWeb.dev;
+    QWeb.dev = true;
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal>
+            <div>2</div>
+          </Portal>
+        </div>`;
+    }
+    let error;
+    try {
+      const parent = new Parent();
+      await parent.mount(fixture);
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toBe(`Missing props 'target' (component 'Portal')`);
+
+    QWeb.dev = dev;
+  });
+
+  test("target is not list", async () => {
+    const dev = QWeb.dev;
+    QWeb.dev = true;
+    class Parent extends Component<any, any> {
+      static components = { Portal };
+      static template = xml`
+        <div>
+          <Portal target="['body']">
+            <div>2</div>
+          </Portal>
+        </div>`;
+    }
+    let error;
+    try {
+      const parent = new Parent();
+      await parent.mount(fixture);
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toBe(`Invalid Prop 'target' in component 'Portal'`);
+
+    QWeb.dev = dev;
+  });
+  /*
    * DOM PLACEMENT
    */
   test("basic use of portal", async () => {
+    const dev = QWeb.dev;
+    QWeb.dev = true;
     class Parent extends Component<any, any> {
       static components = { Portal };
       static template = xml`
@@ -46,12 +101,18 @@ describe("Portal", () => {
           </Portal>
         </div>`;
     }
-
-    const parent = new Parent();
+    let error;
+    let parent;
+    try {
+      parent = new Parent();
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeUndefined();
     await parent.mount(fixture);
-
     expect(outside.innerHTML).toBe('<div>2</div>');
     expect(parent.el!.outerHTML).toBe('<div><span>1</span><portal></portal></div>');
+    QWeb.dev = dev;
   });
 
   test("conditional use of Portal", async () => {
