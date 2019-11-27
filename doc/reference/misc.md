@@ -58,21 +58,36 @@ and ultimately just a way for the parent to teleport a piece of its own DOM else
 
 The canonic use-case is to implement a Dialog, where a Component may choose to break the natural
 workflow to help the user put in some data, which it could use later on.
+JavaScript:
+```js
+const { Component } = owl;
+const { Portal } = owl.misc;
+
+class TeleportedComponent extends Component {}
+class App extends Component {}
+
+App.components = { Portal , TeleportedComponent };
+
+const app = new App();
+app.mount(document.body);
+```
+XML:
 
 ```xml
-<div t-name="TeleportedComponent">
-    <span>I will move soon enough</span>
-</div>
+<templates>
+    <div t-name="TeleportedComponent">
+        <span>I will move soon enough</span>
+    </div>
 
-<div t-name="SomeComponent">
-    <span>I am like the rest of us</span>
-    <Portal target="'body'" t-if="state.dialog">
-        <TeleportedComponent />
-    </Portal>
-</div>
+    <div t-name="App">
+        <span>I am like the rest of us</span>
+        <Portal target="'body'">
+            <TeleportedComponent />
+        </Portal>
+    </div>
+</templates>
 ```
-In this example, the `Portal` component when activated by the use of `SomeComponent`'s state
-will teleport the `TeleportedComponent`'s `div` as a child of the `body`.
+In this example, the `Portal` component will teleport the `TeleportedComponent`'s `div` as a child of the `body`.
 `TeleportedComponent` is acting as a Dialog here.
 
 The resulting DOM will look like:
