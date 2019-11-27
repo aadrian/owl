@@ -617,7 +617,7 @@ test("events triggered on contained movable owl components are redirected", asyn
         </Portal>`;
     }
     class Parent extends Component<any, any> {
-      static components = { Portal , Child , Child2};
+      static components = { Child , Child2};
       static template = xml`
         <div t-on-custom='_handled'>
           <Child>

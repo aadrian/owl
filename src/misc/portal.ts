@@ -26,7 +26,6 @@ export class Portal extends Component<any, any> {
       type: String,
     }
   }
-
   // The target where we will move `portal`
   target: HTMLElement | null = null;
   // Represents the element that is moved somewhere else
@@ -36,13 +35,15 @@ export class Portal extends Component<any, any> {
   _handlerTunnel: (f: OwlEvent<any>) => void = (ev: OwlEvent<any>) => {
     ev.stopPropagation();
     this.__trigger(ev.originalComponent, ev.type, ev.detail);
-   };
+  };
   // A Set of encountered event that need to be redirected
   _handledEvents: Set<string> = new Set();
 
   constructor(parent, props) {
     super(parent, props);
     useSubEnv({});
+    // Put a callback in the env that is propagated to children
+    // To redirect the events they'll trigger
     this.env[portalSymbol] = (ev) => {
       if (!this._handledEvents.has(ev.type)) {
         this.portal!.elm!.addEventListener(ev.type, this._handlerTunnel);
@@ -50,8 +51,25 @@ export class Portal extends Component<any, any> {
       }
     }
   }
-
-  _deployPortal() {
+  /**
+   * Before being marked as mounted
+   * Open the portal towards the outside target
+   *
+   * @override
+   */
+  __callMounted() {
+    const vnode = this.__owl__.vnode!;
+    this.__sanityChecks(vnode);
+    this.portal = vnode.children![0] as VNode;
+    vnode.children = [];
+    this.__deployPortal();
+    super.__callMounted();
+  }
+  /**
+   * Actually launch the element towards the outside target
+   * And mark the content's Components as mounted
+   */
+  __deployPortal() {
     const portalElm = this.portal!.elm!;
     this.target!.appendChild(portalElm);
     const owlChildren = Object.values(this.__owl__.children);
@@ -59,23 +77,12 @@ export class Portal extends Component<any, any> {
       child.__callMounted();
     }
   }
-
-  __patch(vnode) {
-    this._sanityChecks(vnode);
-    this.portal = patch(this.portal!, vnode.children![0] as VNode);
-    vnode.children = [];
-    super.__patch(vnode);
-  }
-
-  __callMounted() {
-    const vnode = this.__owl__.vnode!;
-    this._sanityChecks(vnode);
-    this.portal = vnode.children![0] as VNode;
-    vnode.children = [];
-    this._deployPortal();
-    super.__callMounted();
-  }
-
+  /**
+   * Removes from the DOM
+   * the element we have teleported
+   *
+   * @override
+   */
   __destroy(parent) {
     if (this.portal) {
       const displacedElm = this.portal.elm!;
@@ -86,8 +93,23 @@ export class Portal extends Component<any, any> {
     }
     super.__destroy(parent);
   }
-
-  _sanityChecks(vnode: VNode) {
+  /**
+   * Patches the element that has been moved
+   * somewhere else
+   *
+   * @override
+   */
+  __patch(vnode) {
+    this.__sanityChecks(vnode);
+    this.portal = patch(this.portal!, vnode.children![0] as VNode);
+    vnode.children = [];
+    super.__patch(vnode);
+  }
+  /**
+   * At each DOM change, ensures that the structure is correct
+   * and the specs respected
+   */
+  __sanityChecks(vnode: VNode) {
     const children = vnode.children!;
     let countRealNodes = 0;
     for (let child of children) {
